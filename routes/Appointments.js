@@ -33,8 +33,8 @@ router.use(session({
 
 //*********** Get All Items From The Database ***********//
 
-router.get('/', function (req, res, next) {
-    repository.findAll().then(function (appointments) {
+router.get('/', (req, res, next) => {
+    repository.findAll().then((appointments) => {
         const scheduled = appointments.filter((item) => item.notification && !item.done && !item.isDeleted).sort((a, b) => {
             if (a.notification !== null && b.notification !== null) {
                 return new Date(a.notification) - new Date(b.notification);
@@ -54,12 +54,12 @@ router.get('/', function (req, res, next) {
     }).catch((error) => console.log(error));
 });
 
-router.get('/notes', function (req, res, next) {
-    repository.findAllNotes().then(function (notes) {
+router.get('/notes', (req, res, next) => {
+    repository.findAllNotes().then((notes) => {
         res.json(
             {
-                success:true,
-                notes:notes
+                success: true,
+                notes: notes
             }
         );
     }).catch((error) => console.log(error));
@@ -101,7 +101,7 @@ router.post('/notes', function (req, res, next) {
 router.put('/', (req, res) => {
     const id = req.body.id;
     let newDate = new Date(req.body.notification)
-    const reminder = { 
+    const reminder = {
         name: req.body.name,
         done: req.body.done,
         notification: req.body.notification,
@@ -120,12 +120,12 @@ router.put('/notes', function (req, res, next) {
     const note = {
         name: req.body.name,
         note: req.body.note,
-        id:req.body._id,
+        id: req.body.id,
         priority: false
     }
-    repository.updateNoteById(id, note)
-    .then(res.status(200).json({ success: true }))
-    .catch((error) => console.log(error));
+    repository.updateNoteById(req.body.id, note)
+        .then(res.status(200).json({ success: true }))
+        .catch((error) => console.log(error));
 });
 
 
