@@ -4,5 +4,5 @@ const server = require('./server');
 
 scheduler.start();
 server.listen(config.APP_PORT, () => {
-    console.log("Server Is Running on ", config.APP_PORT)
-  });
+  console.log("Server Is Running on ", config.APP_PORT)
+});

@@ -36,6 +36,6 @@ const Schema = new mongoose.Schema({
   }
 });
 
-const Appointment = mongoose.model('Appointment', Schema);
+const Reminder = mongoose.model('Reminder', Schema);
 
-module.exports = Appointment;
+module.exports = Reminder;
