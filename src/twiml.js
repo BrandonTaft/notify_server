@@ -1,5 +1,3 @@
-//******* Recieve Message And Send Auto Response ********//
-
 router.get("/sms", async (req, res) => {
     console.log("test", req.query)
     try {
