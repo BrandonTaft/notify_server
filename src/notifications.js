@@ -51,7 +51,6 @@ async function checkForNotifications() {
             for (let chunk of receiptIdChunks) {
                 try {
                     let receipts = await expo.getPushNotificationReceiptsAsync(chunk);
-                    console.log(receipts);
                     // The receipts specify whether Apple or Google successfully received the
                     // notification and information about an error, if one occurred.
                     for (let receiptId in receipts) {

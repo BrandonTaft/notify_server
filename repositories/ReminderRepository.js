@@ -5,19 +5,19 @@ class ReminderRepository {
     this.model = model;
   };
 
-  create(reminder) {
-    let newDate = new Date(reminder.notification)
-    const newReminder = {
-      name: reminder.name,
-      notification: reminder.notification,
-      month: newDate.getMonth(),
-      day: newDate.getDate(),
-      time: newDate.toLocaleTimeString('en-US'),
-      token: reminder.expoPushToken,
-      priority: false,
-      done: false
-    }
-    const Reminder = new this.model(newReminder);
+  create(reminders) {
+    // let newDate = new Date(reminder.notification)
+    // const newReminder = {
+    //   name: reminder.name,
+    //   notification: reminder.notification,
+    //   month: newDate.getMonth(),
+    //   day: newDate.getDate(),
+    //   time: newDate.toLocaleTimeString('en-US'),
+    //   token: reminder.expoPushToken,
+    //   priority: false,
+    //   done: false
+    // }
+    const Reminder = new this.model({reminders: reminders});
     return Reminder.save();
   };
 

@@ -45,8 +45,16 @@ router.get('/', (req, res, next) => {
         .catch((error) => console.log(error));
 });
 
-//*********** Get All Notes ***********//
+router.post('/all', function (req, res, next) {
+    let reminders = req.body.reminders;
+    console.log(req.body.reminders)
+    repository.create(reminders)
+        .then(res.status(200).json({ success: true }))
+        .catch((error) => console.log(error))
+});
 
+
+//*********** Get All Notes ***********//
 router.get('/notes', (req, res, next) => {
     repository.findAllNotes()
         .then((notes) => { res.json({ success: true, notes: notes }) })
@@ -54,7 +62,6 @@ router.get('/notes', (req, res, next) => {
 });
 
 //************* Add Reminders **************//
-
 router.post('/', function (req, res, next) {
     let newReminder = req.body;
     repository.create(newReminder)
@@ -63,7 +70,6 @@ router.post('/', function (req, res, next) {
 });
 
 //************* Add Notes **************//
-
 router.post('/notes', function (req, res, next) {
     let note = req.body;
     repository.createNote(note)
@@ -80,7 +86,6 @@ router.put('/', (req, res) => {
 });
 
 //*********** Update Notes *************//
-
 router.put('/notes', function (req, res, next) {
     const note = req.body;
     repository.updateNoteById(note)
@@ -88,8 +93,7 @@ router.put('/notes', function (req, res, next) {
         .catch((error) => console.log(error));
 });
 
-//*********** Restore Reminders and notes *************//
-
+//********** Restore Reminders and notes *************//
 router.post('/restore', function (req, res, next) {
     const selected = req.body.selected
     repository.restoreSelected(selected)
@@ -97,8 +101,7 @@ router.post('/restore', function (req, res, next) {
         .catch((error) => console.log(error))
 });
 
-//*********** Mark Reminders as completed *************//
-
+//********** Mark Reminders as completed *************//
 router.post('/complete', function (req, res, next) {
     const selected = req.body.selected
     repository.completeSelected(selected)
@@ -107,7 +110,6 @@ router.post('/complete', function (req, res, next) {
 });
 
 //*********** Soft Delete Notes / Reminders *************//
-
 router.post('/delete', function (req, res, next) {
     const selected = req.body.selected
     repository.deleteSelected(selected)
@@ -116,7 +118,6 @@ router.post('/delete', function (req, res, next) {
 });
 
 //*********** Hard Delete Notes / Reminders *************//
-
 router.post('/wipe', function (req, res, next) {
     const selected = req.body.selected
     repository.wipeSelected(selected)
