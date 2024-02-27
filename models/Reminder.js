@@ -34,6 +34,9 @@ const Schema = new mongoose.Schema({
 //   note:{
 //     type: Boolean
 //   }
+deviceId: {
+type: String
+},
 reminders: {
   type: Object
 }

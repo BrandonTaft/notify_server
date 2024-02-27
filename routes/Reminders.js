@@ -23,34 +23,71 @@ router.use(session({
 
 //*********** Get All Reminders ***********//
 
-router.get('/', (req, res, next) => {
-    repository.findAll()
+router.post('/', (req, res, next) => {
+    let deviceId= req.body.deviceId;
+    repository.findAll(deviceId)
         .then((reminders) => {
-            const scheduled = reminders.filter((item) => item.notification && !item.done && !item.isDeleted).sort((a, b) => {
-                if (a.notification !== null && b.notification !== null) {
-                    return new Date(a.notification) - new Date(b.notification);
-                }
-            })
-            const unScheduled = reminders.filter((item) => !item.notification && !item.done && !item.isDeleted && !item.note)
-            const completed = reminders.filter((item) => item.done && !item.isDeleted && !item.note)
-            const deleted = reminders.filter((item) => item.isDeleted)
+             let success;
+             let empty;
+            if(reminders.length) {
+                success = true
+            } else { 
+                success = false
+            }
+            
+            //     // const scheduled = reminders.filter((item) => item.notification && !item.done && !item.isDeleted).sort((a, b) => {
+            //     //     if (a.notification !== null && b.notification !== null) {
+            //     //         return new Date(a.notification) - new Date(b.notification);
+            //     //     }
+            //     // })
+            //     // const unScheduled = reminders.filter((item) => !item.notification && !item.done && !item.isDeleted && !item.note)
+            //     // const completed = reminders.filter((item) => item.done && !item.isDeleted && !item.note)
+            //     // const deleted = reminders.filter((item) => item.isDeleted)
+            //     // res.json({
+            //     //     success: true,
+            //     //     scheduled: scheduled,
+            //     //     unScheduled: unScheduled,
+            //     //     completed: completed,
+            //     //     deleted: deleted
+            //     // });
+            //     res.json({
+            //         success: success,
+            //         empty:empty,
+            //         reminders:reminders
+            //     })
+            // })
+            console.log(reminders)
+            // const scheduled = reminders.filter((item) => item.notification && !item.done && !item.isDeleted).sort((a, b) => {
+            //     if (a.notification !== null && b.notification !== null) {
+            //         return new Date(a.notification) - new Date(b.notification);
+            //     }
+            // })
+            // const unScheduled = reminders.filter((item) => !item.notification && !item.done && !item.isDeleted && !item.note)
+            // const completed = reminders.filter((item) => item.done && !item.isDeleted && !item.note)
+            // const deleted = reminders.filter((item) => item.isDeleted)
+            // res.json({
+            //     success: true,
+            //     scheduled: scheduled,
+            //     unScheduled: unScheduled,
+            //     completed: completed,
+            //     deleted: deleted
+            // });
             res.json({
-                success: true,
-                scheduled: scheduled,
-                unScheduled: unScheduled,
-                completed: completed,
-                deleted: deleted
-            });
+                success: success,
+                empty:empty,
+                reminders:reminders
+            })
         })
         .catch((error) => console.log(error));
 });
 
-router.post('/all', function (req, res, next) {
-    let reminders = req.body.reminders;
-    console.log(req.body.reminders)
-    repository.create(reminders)
-        .then(res.status(200).json({ success: true }))
-        .catch((error) => console.log(error))
+router.post('/store', function (req, res, next) {
+    const deviceId= req.body.deviceId;
+    const reminders = req.body.reminders;
+    const isNew = req.body.isNew;
+    repository.create(deviceId, reminders, res)
+        // .then(res.status(200).json({ success: true }))
+        // .catch((error) => console.log(error))
 });
 
 
@@ -62,12 +99,12 @@ router.get('/notes', (req, res, next) => {
 });
 
 //************* Add Reminders **************//
-router.post('/', function (req, res, next) {
-    let newReminder = req.body;
-    repository.create(newReminder)
-        .then(res.status(200).json({ success: true }))
-        .catch((error) => console.log(error))
-});
+// router.post('/', function (req, res, next) {
+//     let newReminder = req.body;
+//     repository.create(newReminder)
+//         .then(res.status(200).json({ success: true }))
+//         .catch((error) => console.log(error))
+// });
 
 //************* Add Notes **************//
 router.post('/notes', function (req, res, next) {
@@ -78,12 +115,12 @@ router.post('/notes', function (req, res, next) {
 });
 
 //*********** Update Reminders *************//
-router.put('/', (req, res) => {
-    let reminder = req.body;
-    repository.updateById(reminder)
-        .then(res.status(200).json({ success: true }))
-        .catch((error) => console.log(error));
-});
+// router.put('/', (req, res) => {
+//     let reminder = req.body;
+//     repository.updateById(reminder)
+//         .then(res.status(200).json({ success: true }))
+//         .catch((error) => console.log(error));
+// });
 
 //*********** Update Notes *************//
 router.put('/notes', function (req, res, next) {

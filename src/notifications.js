@@ -4,12 +4,17 @@ require('dotenv').config()
 
 /********************* CHECKS FOR NOTIFICATIONS DUE ********************/
 async function checkForNotifications() {
-    let remindersDue;
+    let reminders;
     let time = new Date();
     const currentDay = time.getDate();
     const currentDate = time.getMonth();
     const currentTime = time.toLocaleTimeString('en-US')
-    remindersDue = await repository.findByTime(currentDate, currentDay, currentTime)
+    reminders = await repository.findAll()
+    console.log(reminders[3].reminders)
+    let remindersDue = reminders[3].reminders.filter((reminder) => {
+        reminder.month === currentDate //&& reminder.day === currentDay && reminders.time === currentTime
+    })
+    console.log(currentDate, remindersDue)
     if (remindersDue.length > 0) {
         let expo = new Expo();
         let messages = [];

@@ -4,21 +4,46 @@ class ReminderRepository {
   constructor(model) {
     this.model = model;
   };
+  updateById(reminder) {
+    const query = { _id: reminder.id };
+    let newDate = new Date(reminder.notification)
+    return this.model.findOneAndUpdate(query, {
+      $set: {
+        name: reminder.name,
+        done: reminder.done,
+        notification: reminder.notification,
+        month: newDate.getMonth(),
+        day: newDate.getDate(),
+        time: newDate.toLocaleTimeString('en-US'),
+        priority: reminder.priority,
+        token: reminder.token
+      }
+    })
+  };
 
-  create(reminders) {
-    // let newDate = new Date(reminder.notification)
-    // const newReminder = {
-    //   name: reminder.name,
-    //   notification: reminder.notification,
-    //   month: newDate.getMonth(),
-    //   day: newDate.getDate(),
-    //   time: newDate.toLocaleTimeString('en-US'),
-    //   token: reminder.expoPushToken,
-    //   priority: false,
-    //   done: false
+  create(deviceId, reminders, res) {
+    this.model.findOne({ deviceId: deviceId }).then(async result => {
+      console.log("EEEEE", result)
+      if (result) {
+        console.log("IT WAS EXISTING")
+        return this.model.findOneAndUpdate({ deviceId: deviceId }, {
+          $set: {
+            reminders: reminders
+          }
+        }).then(res.status(200).json({ success: true }))
+        .catch((error) => console.log(error))
+        
+      } else {
+        console.log("I MADE A NEW ONE")
+        const Reminder = new this.model({ deviceId: deviceId, reminders: reminders });
+        return Reminder.save().then(res.status(200).json({ success: true }))
+        .catch((error) => console.log(error));
+        
+      }
+    })
+    
     // }
-    const Reminder = new this.model({reminders: reminders});
-    return Reminder.save();
+
   };
 
   createNote(note) {
@@ -32,6 +57,10 @@ class ReminderRepository {
     }
     const Reminder = new this.model(newNote);
     return Reminder.save();
+  };
+
+  findAll(deviceId) {
+    return this.model.find({ deviceId: deviceId });
   };
 
   findAll() {
