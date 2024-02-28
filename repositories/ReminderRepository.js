@@ -59,7 +59,7 @@ class ReminderRepository {
     return Reminder.save();
   };
 
-  findAll(deviceId) {
+  findByDevice(deviceId) {
     return this.model.find({ deviceId: deviceId });
   };
 
