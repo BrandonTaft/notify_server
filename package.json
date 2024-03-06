@@ -19,7 +19,9 @@
     "expo-server-sdk": "^3.7.0",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
+    "express-ws": "^5.0.2",
     "mongoose": "^6.0.14",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "uuid": "^9.0.1"
   }
 }

@@ -9,7 +9,7 @@ function start() {
     () => {
       const time = new Date();
       const currentTime = time.getHours();
-      notifications.checkForNotifications(currentTime);
+      notifications.checkForDueNotifications(currentTime);
     },
     null, // don't run anything after finishing the job
     true, // start the timer

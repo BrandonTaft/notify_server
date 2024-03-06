@@ -23,9 +23,7 @@ class ReminderRepository {
 
   create(deviceId, reminders, res) {
     this.model.findOne({ deviceId: deviceId }).then(async result => {
-      console.log("EEEEE", result)
       if (result) {
-        console.log("IT WAS EXISTING")
         return this.model.findOneAndUpdate({ deviceId: deviceId }, {
           $set: {
             reminders: reminders
@@ -34,16 +32,11 @@ class ReminderRepository {
         .catch((error) => console.log(error))
         
       } else {
-        console.log("I MADE A NEW ONE")
         const Reminder = new this.model({ deviceId: deviceId, reminders: reminders });
         return Reminder.save().then(res.status(200).json({ success: true }))
         .catch((error) => console.log(error));
-        
       }
     })
-    
-    // }
-
   };
 
   createNote(note) {

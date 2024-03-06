@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
             //         reminders:reminders
             //     })
             // })
-            console.log(reminders)
+        
             // const scheduled = reminders.filter((item) => item.notification && !item.done && !item.isDeleted).sort((a, b) => {
             //     if (a.notification !== null && b.notification !== null) {
             //         return new Date(a.notification) - new Date(b.notification);
@@ -84,7 +84,6 @@ router.post('/', (req, res, next) => {
 router.post('/store', function (req, res, next) {
     const deviceId= req.body.deviceId;
     const reminders = req.body.reminders;
-    const isNew = req.body.isNew;
     repository.create(deviceId, reminders, res)
         // .then(res.status(200).json({ success: true }))
         // .catch((error) => console.log(error))

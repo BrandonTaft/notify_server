@@ -2,33 +2,41 @@ const repository = require('../repositories/ReminderRepository');
 const { Expo } = require('expo-server-sdk')
 require('dotenv').config()
 
-/********************* CHECKS FOR NOTIFICATIONS DUE ********************/
-async function checkForNotifications() {
+async function checkForDueNotifications() {
     let data;
     let time = new Date();
     const currentDay = time.getDate();
     const currentDate = time.getMonth();
-    const currentTime = time.toLocaleTimeString('en-US')
     data = await repository.findAll()
     let remindersDue = []
-for(let i = 0; i < data.length; i++) {
-  remindersDue = [...data[i].reminders.filter((item) => item.month === currentDate)]
-}
-console.log(remindersDue)
-   
+    for (let i = 0; i < data.length; i++) {
+        remindersDue = [...data[i].reminders.filter((item) => {
+            return (
+                item.month === currentDate
+                &&
+                item.day === currentDay
+                &&
+                item.isDeleted === false
+                &&
+                new Date(item.time).setMilliseconds(0) === time.setMilliseconds(0)
+            )
+        })]
+    }
+
     if (remindersDue.length > 0) {
         let expo = new Expo();
         let messages = [];
-        let pushToken = "ExponentPushToken[im3KBhJ7tf1KH9ZRAGiEOu]"
-        if (!Expo.isExpoPushToken(pushToken)) {
-            console.error(`Push token ${pushToken} is not a valid Expo push token`);
-        } else {
-            messages.push({
-                to: remindersDue[0].token,
-                sound: 'default',
-                body: remindersDue[0].title,
-                data: { withSome: 'data' },
-            })
+        for (let i = 0; i < remindersDue.length; i++) {
+            let pushToken = remindersDue[i].token
+            if (!Expo.isExpoPushToken(pushToken)) {
+                console.error(`Push token ${pushToken} is not a valid Expo push token`);
+            } else {
+                messages.push({
+                    to: pushToken,
+                    sound: 'default',
+                    body: remindersDue[i].title
+                })
+            }
         }
         let chunks = expo.chunkPushNotifications(messages);
         let tickets = [];
@@ -37,10 +45,10 @@ console.log(remindersDue)
             for (let chunk of chunks) {
                 try {
                     let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-                    console.log(ticketChunk);
+                    console.log("tickets:", ticketChunk);
                     tickets.push(...ticketChunk);
                 } catch (error) {
-                    console.error(error);
+                    console.error("ticket_errors:", error);
                 }
             }
         })();
@@ -81,5 +89,5 @@ console.log(remindersDue)
 }
 
 module.exports = {
-    checkForNotifications,
+    checkForDueNotifications
 };
