@@ -7,12 +7,92 @@ const cors = require('cors')
 const config = require('./config/Config');
 const reminders = require('./routes/Reminders');
 const app = express();
-var expressWs = require('express-ws')(app);
+const http = require("http").Server(app);
 const uuidv4 = require('uuid').v4;
-
-
-
 require('dotenv').config()
+
+const socketIO = require('socket.io')(http, {
+  cors: {
+      origin: "<http://192.168.1.26:8081>"
+  }
+});
+
+const generateID = () => Math.random().toString(36).substring(2, 10);
+
+let chatRooms = [
+    //👇🏻 Here is the data structure of each chatroom
+    // {
+    //  id: generateID(),
+    //  name: "Novu Hangouts",
+    //  messages: [
+    //      {
+    //          id: generateID(),
+    //          text: "Hello guys, welcome!",
+    //          time: "07:50",
+    //          user: "Tomer",
+    //      },
+    //      {
+    //          id: generateID(),
+    //          text: "Hi Tomer, thank you! 😇",
+    //          time: "08:50",
+    //          user: "David",
+    //      },
+    //  ],
+    // },
+];
+
+//👇🏻 Add this before the app.get() block
+socketIO.on("connection", (socket) => {
+  console.log(`⚡: ${socket.id} user just connected!`);
+
+  socket.on("createRoom", (roomName) => {
+      socket.join(roomName);
+      //👇🏻 Adds the new group name to the chat rooms array
+      chatRooms.unshift({ id: generateID(), roomName, messages: [] });
+      //👇🏻 Returns the updated chat rooms via another event
+      socket.emit("roomsList", chatRooms);
+  });
+
+  socket.on("disconnect", () => {
+      socket.disconnect();
+      console.log("🔥: A user disconnected");
+  });
+
+
+socket.on("findRoom", (id) => {
+  //👇🏻 Filters the array by the ID
+  let result = chatRooms.filter((room) => room.id == id);
+  //👇🏻 Sends the messages to the app
+  socket.emit("foundRoom", result[0].messages);
+});
+
+socket.on("newMessage", (data) => {
+  //👇🏻 Destructures the property from the object
+  const { room_id, message, user, timestamp } = data;
+
+  //👇🏻 Finds the room where the message was sent
+  let result = chatRooms.filter((room) => room.id == room_id);
+
+  //👇🏻 Create the data structure for the message
+  const newMessage = {
+      id: generateID(),
+      text: message,
+      user,
+      time: `${timestamp.hour}:${timestamp.mins}`,
+  };
+  //👇🏻 Updates the chatroom messages
+  socket.to(result[0].name).emit("roomMessage", newMessage);
+  result[0].messages.push(newMessage);
+
+  //👇🏻 Trigger the events to reflect the new changes
+  socket.emit("roomsList", chatRooms);
+  socket.emit("foundRoom", result[0].messages);
+});
+});
+
+app.get("/api", (req, res) => {
+  res.json(chatRooms);
+});
 
 mongoose.connect(config.DB, {
   useNewUrlParser: true,
@@ -20,8 +100,9 @@ mongoose.connect(config.DB, {
 });
 
 app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
 app.use(bodyParser.json());
 app.use(
   bodyParser.urlencoded({
@@ -31,74 +112,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// I'm maintaining all active connections in this object
-const clients = {};
-// I'm maintaining all active users in this object
-const users = {};
-// The current editor content is maintained here.
-let editorContent = null;
-// User activity history.
-let userActivity = [];
 
-// Event types
-const typesDef = {
-  USER_EVENT: 'userevent',
-  CONTENT_CHANGE: 'contentchange'
-}
 
-function broadcastMessage(json) {
-  // We are sending the current data to all connected clients
-  const data = JSON.stringify(json);
-  for(let userId in clients) {
-    let client = clients[userId];
-    if(client.readyState === WebSocket.OPEN) {
-      client.send(data);
-    }
-  };
-}
 
-function handleMessage(message, userId) {
-  const dataFromClient = JSON.parse(message.toString());
-  const json = { type: dataFromClient.type };
-  if (dataFromClient.type === typesDef.USER_EVENT) {
-    users[userId] = dataFromClient;
-    userActivity.push(`${dataFromClient.username} joined to edit the document`);
-    json.data = { users, userActivity };
-  } else if (dataFromClient.type === typesDef.CONTENT_CHANGE) {
-    editorContent = dataFromClient.content;
-    json.data = { editorContent, userActivity };
-  }
-  broadcastMessage(json);
-}
-
-function handleDisconnect(userId) {
-    console.log(`${userId} disconnected.`);
-    const json = { type: typesDef.USER_EVENT };
-    const username = users[userId]?.username || userId;
-    userActivity.push(`${username} left the document`);
-    json.data = { users, userActivity };
-    delete clients[userId];
-    delete users[userId];
-    broadcastMessage(json);
-}
-
-app.ws('/', function(ws, req) {
-  // ws.on('message', function(msg) {
-  //   console.log(msg);
-  // });
-  ws.on('message', function(connection) {
-    // Generate a unique code for every user
-    const userId = uuidv4();
-    console.log('Received a new connection', connection);
-  
-    // Store the new connection and handle messages
-    clients[userId] = connection;
-    console.log(`${userId} connected.`);
-    connection.on('message', (message) => handleMessage(message, userId));
-    // User disconnected
-    connection.on('close', () => handleDisconnect(userId));
-  });
-});
 
 app.use('/', reminders);
 
