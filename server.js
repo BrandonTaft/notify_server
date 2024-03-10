@@ -50,14 +50,14 @@ socketIO.on("connection", (socket) => {
       //👇🏻 Adds the new group name to the chat rooms array
       chatRooms.unshift({ id: generateID(), name, messages: [] });
       //👇🏻 Returns the updated chat rooms via another event
-      socket.emit("roomsList", chatRooms);
+      socketIO.emit("roomsList", chatRooms);
   });
 
   socket.on("findRoom", (id) => {
     //👇🏻 Filters the array by the ID
     let result = chatRooms.filter((room) => room.id == id);
     //👇🏻 Sends the messages to the app
-    socket.emit("foundRoom", result[0].messages);
+    socketIO.emit("foundRoom", result[0].messages);
   });
 
   socket.on("newMessage", (data) => {
@@ -69,13 +69,13 @@ socketIO.on("connection", (socket) => {
 			user,
 			time: `${timestamp.hour}:${timestamp.mins}`,
 		};
-		console.log("New Message", newMessage);
-		socket.to(result[0].name).emit("roomMessage", newMessage);
+		console.log("New Message", result);
+		//socket.to(result[0].name).emit("roomMessage", newMessage);
 		result[0].messages.push(newMessage);
 
-		socket.emit("roomsList", chatRooms);
+		socketIO.emit("roomsList", chatRooms);
     console.log("foundRoom", result[0].messages)
-		socket.emit("foundRoom", result[0].messages);
+		socketIO.emit("foundRoom", result[0].messages);
 	});
 
   socket.on("disconnect", () => {
