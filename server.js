@@ -19,33 +19,13 @@ const socketIO = require('socket.io')(http, {
 
 const generateID = () => Math.random().toString(36).substring(2, 10);
 
-let chatRooms = [
-    //👇🏻 Here is the data structure of each chatroom
-    // {
-    //  id: generateID(),
-    //  name: "Novu Hangouts",
-    //  messages: [
-    //      {
-    //          id: generateID(),
-    //          text: "Hello guys, welcome!",
-    //          time: "07:50",
-    //          user: "Tomer",
-    //      },
-    //      {
-    //          id: generateID(),
-    //          text: "Hi Tomer, thank you! 😇",
-    //          time: "08:50",
-    //          user: "David",
-    //      },
-    //  ],
-    // },
-];
+let chatRooms = [];
 
-//👇🏻 Add this before the app.get() block
 socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected!`);
 
-  socket.on("createRoom", (name) => {
+  socket.on("createRoom", ({name, organization}) => {
+    console.log("ORG : ", organization)
       socket.join(name);
       //👇🏻 Adds the new group name to the chat rooms array
       chatRooms.unshift({ id: generateID(), name, messages: [] });
@@ -69,13 +49,9 @@ socketIO.on("connection", (socket) => {
 			user,
 			time: `${timestamp.hour}:${timestamp.mins}`,
 		};
-		console.log("New Message", result);
-		//socket.to(result[0].name).emit("roomMessage", newMessage);
 		result[0].messages.push(newMessage);
-
 		socketIO.emit("roomsList", chatRooms);
-    console.log("foundRoom", result[0].messages)
-		socketIO.emit("foundRoom", result[0].messages);
+		socketIO.emit("newMessage", result[0].messages);
 	});
 
   socket.on("disconnect", () => {
