@@ -29,12 +29,14 @@ router.post("/register", (req, res) => {
     repository.registerUser(user, res)
 })
    
-router.post('/store', function (req, res, next) {
-    const deviceId= req.body.deviceId;
-    const reminders = req.body.reminders;
-    repository.create(deviceId, reminders, res)
-        // .then(res.status(200).json({ success: true }))
-        // .catch((error) => console.log(error))
+router.post('/login', function (req, res) {
+    let user = req.body.user;
+    repository.logInUser(user, res)
+});
+
+router.post('/logout', function (req, res) {
+    let user = req.body.user;
+    repository.logOutUser(user, res)
 });
 
 
