@@ -6,10 +6,13 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors')
 const config = require('./config/Config');
-const reminders = require('./routes/Reminders');
+const users = require('./routes/UsersRoute');
+const reminders = require('./routes/RemindersRoute');
 const app = express();
 const http = require("http").Server(app);
 const uuidv4 = require('uuid').v4;
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 require('dotenv').config();
 
 const socketIO = require('socket.io')(http, {
@@ -35,7 +38,8 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/', reminders);
+app.use('/api/reminders', reminders);
+app.use('/api/users', users);
 
 app.use((_, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -1,4 +1,4 @@
-const Reminder = require('../models/Reminder');
+const Reminder = require('../models/ReminderModel');
 
 class ReminderRepository {
   constructor(model) {
