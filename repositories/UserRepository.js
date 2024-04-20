@@ -1,4 +1,5 @@
 const User = require('../models/UserModel');
+const multer = require('multer');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const salt = 10;
@@ -23,7 +24,6 @@ class UserRepository {
                             });
                         } else {
                             const user = new this.model({
-                                user_id: user_id,
                                 user_name: userName,
                                 password: hash,
                                 organization: organization,
@@ -59,7 +59,7 @@ class UserRepository {
                             res.status(201).json({
                                 sucess: true,
                                 token,
-                                data: { existingUser },
+                                existingUser,
                             });
                         } else {
                             res.status(403).json({
@@ -76,8 +76,8 @@ class UserRepository {
     };
 
     logOutUser(user, res) {
-        const { userName } = user;
-        this.model.findOne({ user_name: userName }).collation({ locale: 'en', strength: 2 })
+        const { _id } = user;
+        this.model.findOne({ _id: _id })
             .then(async existingUser => {
                 if (existingUser) {
                     existingUser.is_logged_in = false;
@@ -88,6 +88,20 @@ class UserRepository {
                 }
             })
     };
+
+    updateUser(user, newStuff, res) {
+        const { _id, organization } = user;
+        this.model.findOne({ _id: _id })
+            .then(async existingUser => {
+                if (existingUser) {
+                    Object.assign(existingUser, newStuff)
+                    existingUser.save();
+                    res.status(201).json({ success: true, message: "Updated user profile" });
+                } else {
+                    res.status(404).json({ success: false, message: "User not found" });
+                }
+            })
+    }
 }
 
 module.exports = new UserRepository(User);
