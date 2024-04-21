@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const Schema = new mongoose.Schema({
+const RemindersSchema = new mongoose.Schema({
 //   name: {
 //     type: String,
 //   },
@@ -34,14 +34,24 @@ const Schema = new mongoose.Schema({
 //   note:{
 //     type: Boolean
 //   }
-deviceId: {
+user_id: {
 type: String
 },
 reminders: {
   type: Object
 }
 });
-
-const Reminder = mongoose.model('Reminder', Schema);
+RemindersSchema.index(
+  {
+      user_id: 1
+  },
+  {
+      collation: {
+          locale: 'en',
+          strength: 2
+      }
+  }
+)
+const Reminder = mongoose.model('Reminder', RemindersSchema);
 
 module.exports = Reminder;

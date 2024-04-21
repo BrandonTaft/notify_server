@@ -23,7 +23,7 @@ exports.registerUser = (req, res) => {
                             password: hash,
                             organization: organization,
                             isLoggedIn: false
-                        })
+                        });
 
                         let savedUser = await user.save()
                         if (savedUser !== null) {
