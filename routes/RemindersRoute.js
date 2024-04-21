@@ -1,7 +1,7 @@
 'use strict';
 const express = require('express');
 const session = require('express-session');
-const repository = require('../repositories/ReminderRepository');
+const repository = require('../controllers/ReminderRepository');
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser")
 require('dotenv').config()

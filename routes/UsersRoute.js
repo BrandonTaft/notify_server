@@ -1,7 +1,7 @@
 'use strict';
 const express = require('express');
 const session = require('express-session');
-const repository = require('../repositories/UserRepository');
+const controller = require('../controllers/user.controller');
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const multer = require('multer');
@@ -21,26 +21,17 @@ router.use(session({
     cookie: { secure: false }
 }));
 
-router.post("/register", (req, res) => {
-    let user = req.body.user;
-    repository.registerUser(user, res)
-})
+router.get('/', controller.getAllUsers)
 
-router.post('/login', function (req, res) {
-    let user = req.body.user;
-    repository.logInUser(user, res)
-});
+router.get('/active', controller.getAllLoggedInUsers)
 
-router.post('/logout', function (req, res) {
-    let user = req.body.user;
-    repository.logOutUser(user, res)
-});
+router.post("/register", controller.registerUser)
 
-router.put('/update', function (req, res) {
-    let user = req.body.user;
-    let newStuff = req.body.newStuff
-    repository.updateUser(user, newStuff, res)
-});
+router.post("/login", controller.logInUser);
+
+router.post('/logout', controller.logOutUser);
+
+router.put('/update', controller.updateUserProfile);
 
 const storage = multer.diskStorage({
     destination(req, file, callback) {
@@ -55,7 +46,5 @@ const upload = multer({ storage });
 router.post('/profile-image', upload.single('photo'), (req, res) => {
     res.status(200).json({ success: true });
 });
-
-
 
 module.exports = router;

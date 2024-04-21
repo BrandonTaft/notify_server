@@ -44,7 +44,7 @@ app.use('/api/users', users);
 app.use((_, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'x-access-token, Content-Type, Authorization, Accept');
   next();
 });
 
@@ -134,25 +134,25 @@ app.get("/chatrooms/:org", (req, res) => {
 });
 
 
-const storage = multer.diskStorage({
-  destination(req, file, callback) {
-    callback(null, './public/images');
-  },
-  filename(req, file, callback) {
-    console.log("REQQQ", file)
-    callback(null, `${file.originalname}`);
-  },
-});
+// const storage = multer.diskStorage({
+//   destination(req, file, callback) {
+//     callback(null, './public/images');
+//   },
+//   filename(req, file, callback) {
+//     console.log("REQQQ", file)
+//     callback(null, `${file.originalname}`);
+//   },
+// });
 
-const upload = multer({ storage });
+// const upload = multer({ storage });
 
-app.post('/api/profile-image', upload.single('photo'), (req, res) => {
-  console.log('file', req.file);
-  console.log('body', req.body.userId);
-  res.status(200).json({
-    message: 'success!',
-  });
-});
+// app.post('/api/profile-image', upload.single('photo'), (req, res) => {
+//   console.log('file', req.file);
+//   console.log('body', req.body.userId);
+//   res.status(200).json({
+//     message: 'success!',
+//   });
+// });
 
 //******Catch 404 Errors And Forward To Error Handler*****//
 app.use(function (req, res, next) {

@@ -1,10 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    user_id: {
-        type: String
-    },
-    user_name: {
+    userName: {
         type: String
     },
     password: {
@@ -13,13 +10,13 @@ const userSchema = new mongoose.Schema({
     organization: {
         type: String
     },
-    profile_image: {
+    profileImage: {
         type: String
     },
-    background_image: {
+    backgroundImage: {
         type: String
     },
-    is_logged_in: {
+    isLoggedIn: {
         type: Boolean
     },
     token: {
@@ -34,7 +31,7 @@ const userSchema = new mongoose.Schema({
 });
 userSchema.index(
     {
-        user_name: 1
+        userName: 1
     },
     {
         collation: {
