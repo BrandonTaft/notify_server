@@ -27,6 +27,8 @@ router.post('/add-reminder', controller.addReminder);
 
 router.post('/update', controller.updateById);
 
+router.post('/delete', controller.deleteById);
+
 
 //*********** Get All Notes ***********//
 router.get('/notes', (req, res, next) => {
