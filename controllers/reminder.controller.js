@@ -50,20 +50,22 @@ exports.updateById = (req, res) => {
     })
 };
 
-exports.deleteById = (req, res) => {
+exports.deleteById = async (req, res) => {
   const reminderId = req.body.reminderId;
   const userId = req.body.userId;
-  Reminders.findOneAndDelete({ user_id: userId, 'reminders.reminder_id': reminderId })
-    .then(async reminder => {
-      if (reminder !== null) {
-        res.status(200).json({ success: true, message: "Reminder has been updated" });
-      } else {
-        res.status(404).json({ success: false, message: "Unable to locate user" });
-      }
-    })
-    .catch(() => {
-      res.status(404).json({ success: false, message: "Unable to locate user" });
-    })
+  const result = await Reminders.findOneAndUpdate( {user_id: userId}, { $pull : { reminders: {reminder_id:reminderId }}})
+    
+    // .then(async reminder => {
+       console.log(result)
+    //   if (reminder !== null) {
+    //     res.status(200).json({ success: true, message: "Reminder has been updated" });
+    //   } else {
+    //     res.status(404).json({ success: false, message: "Unable to locate user" });
+    //   }
+    // })
+    // .catch(() => {
+    //   res.status(404).json({ success: false, message: "Unable to locate user" });
+    // })
 };
 
 
