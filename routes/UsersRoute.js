@@ -33,6 +33,14 @@ router.post('/logout', controller.logOutUser);
 
 router.put('/update', controller.updateUserProfile);
 
+router.put('/add-note', controller.addNote);
+
+router.post('/notes', controller.getUserNotes);
+
+router.put('/edit-note', controller.updateNoteById);
+
+router.post('/delete-note', controller.deleteNoteById);
+
 const storage = multer.diskStorage({
     destination(req, file, callback) {
         callback(null, '../public/images');

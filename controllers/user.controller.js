@@ -71,8 +71,8 @@ exports.logInUser = (req, res) => {
 };
 
 exports.logOutUser = (req, res) => {
-    const { _id } = req.body.user;
-    User.findOne({ _id: _id })
+    const { userId } = req.body.user;
+    User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
                 existingUser.isLoggedIn = false;
@@ -85,9 +85,9 @@ exports.logOutUser = (req, res) => {
 };
 
 exports.updateUserProfile = (req, res) => {
-    let _id = req.body._id;
+    let userId = req.body.userId;
     let updatedProfileData = req.body.updatedProfileData
-    User.findOne({ _id: _id })
+    User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
                 Object.assign(existingUser, updatedProfileData)
@@ -118,3 +118,58 @@ exports.getAllLoggedInUsers = (req, res) => {
             res.status(404).json({ success: false, message: "Unable to load database" });
         })
 };
+
+exports.getUserNotes = (req, res) => {
+    const userId = req.body.userId;
+    User.findOne({ _id: userId }).collation({ locale: 'en', strength: 2 })
+      .then(async user => {
+        res.status(200).json({ success: true, notes: user.notes });
+      })
+      .catch(() => {
+        res.status(404).json({ success: false, message: "Unable to locate user" });
+      })
+  };
+
+exports.addNote = (req, res) => {
+    let userId = req.body.userId;
+    let note = req.body.note
+    User.findOne({ _id: userId })
+        .then(async existingUser => {
+            if (existingUser) {
+                existingUser.notes.push(note)
+                existingUser.save();
+                res.status(201).json({ success: true, message: "Note added" });
+            } else {
+                res.status(404).json({ success: false, message: "User not found" });
+            }
+        })
+};
+
+exports.updateNoteById = (req, res) => {
+    const userId = req.body.userId;
+    const updatedNote = req.body.updatedNote;
+    User.findOneAndUpdate({ _id: userId, 'notes._id': updatedNote.noteId },
+      { $set: { "notes.$": {...updatedNote, _id: updatedNote.noteId } } })
+      .then(async note => {
+        if (note !== null) {
+          res.status(200).json({ success: true, message: "note has been updated" });
+        } else {
+          res.status(404).json({ success: false, message: "Unable to locate user" });
+        }
+      })
+      .catch(() => {
+        res.status(404).json({ success: false, message: "Unable to locate user" });
+      })
+  };
+
+  exports.deleteNoteById = async (req, res) => {
+    const noteId = req.body.noteId;
+    const userId = req.body.userId;
+    User.findOneAndUpdate({ user_id: userId }, { $pull: { notes: { _id: noteId } } })
+      .then(async user => {
+        res.status(200).json({ success: true, message: "Note was deleted" });
+      })
+      .catch(() => {
+        res.status(404).json({ success: false, message: "Unable to locate note" });
+      })
+  };

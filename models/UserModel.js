@@ -1,33 +1,22 @@
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-    userName: {
-        type: String
-    },
-    password: {
-        type: String
-    },
-    organization: {
-        type: String
-    },
-    profileImage: {
-        type: String
-    },
-    backgroundImage: {
-        type: String
-    },
-    isLoggedIn: {
-        type: Boolean
-    },
-    token: {
-        type: String
-    },
-    deviceId: {
-        type: String
-    },
-    reminders: {
-        type: Object
-    }
+    userName: String,
+    password: String,
+    organization: String,
+    profileImage: String,
+    backgroundImage: String,
+    isLoggedIn: Boolean,
+    token: String,
+    deviceId: String,
+    notes: [
+        {
+            body: String,
+            date: Date,
+            isDeleted: String
+        }
+    ]
+
 });
 UserSchema.index(
     {

@@ -14,13 +14,14 @@ exports.getAllReminders = (req, res) => {
 };
 
 exports.addReminder = async (req, res) => {
-  const reminderId = crypto.randomBytes(16).toString("hex");
+  // const reminderId = crypto.randomBytes(16).toString("hex");
   const userId = req.body.userId;
   const reminder = req.body.reminder;
   try {
     const result = await Reminders.updateOne(
       { user_id: userId },
-      { $push: { reminders: { reminder_id: reminderId, ...reminder } } },
+      // { $push: { reminders: { reminder_id: reminderId, ...reminder } } },
+      { $push: { reminders: reminder } },
       { "upsert": true }).collation({ locale: 'en', strength: 2 }
       )
     if (result.upsertedId === null) {
@@ -36,8 +37,8 @@ exports.addReminder = async (req, res) => {
 exports.updateById = (req, res) => {
   const userId = req.body.userId;
   const updatedReminder = req.body.updatedReminder;
-  Reminders.findOneAndUpdate({ user_id: userId, 'reminders.reminder_id': updatedReminder.reminderId },
-    { $set: { "reminders.$": updatedReminder } })
+  Reminders.findOneAndUpdate({ user_id: userId, 'reminders._id': updatedReminder.reminderId },
+    { $set: { "reminders.$": {...updatedReminder, _id: updatedReminder.reminderId } } })
     .then(async reminder => {
       if (reminder !== null) {
         res.status(200).json({ success: true, message: "Reminder has been updated" });
@@ -53,93 +54,11 @@ exports.updateById = (req, res) => {
 exports.deleteById = async (req, res) => {
   const reminderId = req.body.reminderId;
   const userId = req.body.userId;
-  const result = await Reminders.findOneAndUpdate( {user_id: userId}, { $pull : { reminders: {reminder_id:reminderId }}})
-    
-    // .then(async reminder => {
-       console.log(result)
-    //   if (reminder !== null) {
-    //     res.status(200).json({ success: true, message: "Reminder has been updated" });
-    //   } else {
-    //     res.status(404).json({ success: false, message: "Unable to locate user" });
-    //   }
-    // })
-    // .catch(() => {
-    //   res.status(404).json({ success: false, message: "Unable to locate user" });
-    // })
+  Reminders.findOneAndUpdate({ user_id: userId }, { $pull: { reminders: { _id: reminderId } } })
+    .then(async user => {
+      res.status(200).json({ success: true, message: "Reminder was deleted" });
+    })
+    .catch(() => {
+      res.status(404).json({ success: false, message: "Unable to locate reminder" });
+    })
 };
-
-
-// createNote(note) {
-//   let newDate = new Date()
-//   const newNote = {
-//     name: note.name,
-//     note: note.note,
-//     time: newDate,
-//     isDeleted: false,
-//     priority: false
-//   }
-//   const Reminder = new Reminder(newNote);
-//   return Reminder.save();
-// };
-
-// findByDevice(deviceId) {
-//   return Reminder.find({ deviceId: deviceId });
-// };
-
-// findAll() {
-//   return Reminder.find();
-// };
-
-// findAllNotes() {
-//   return Reminder.find({ note: true, isDeleted: false });
-// };
-
-// findByTime(currentDate, currentDay, currentTime) {
-//   return Reminder.find({ $and: [{ month: currentDate }, { day: currentDay }, { time: currentTime }] });
-// };
-
-// deleteSelected(selected) {
-//   return Reminder.updateMany({ _id: { $in: selected } }, { $set: { isDeleted: true } })
-// };
-
-// restoreSelected(selected) {
-//   return Reminder.updateMany({ _id: { $in: selected } }, { $set: { isDeleted: false } })
-// };
-
-// wipeSelected(selected) {
-//   return Reminder.deleteMany({ _id: { $in: selected } }, { $set: { isDeleted: true } })
-// };
-
-// completeSelected(selected) {
-//   return Reminder.updateMany({ _id: { $in: selected } }, { $set: { done: true } })
-// };
-
-// updateById(reminder) {
-//   const query = { _id: reminder.id };
-//   let newDate = new Date(reminder.notification)
-//   return Reminder.findOneAndUpdate(query, {
-//     $set: {
-//       name: reminder.name,
-//       done: reminder.done,
-//       notification: reminder.notification,
-//       month: newDate.getMonth(),
-//       day: newDate.getDate(),
-//       time: newDate.toLocaleTimeString('en-US'),
-//       priority: reminder.priority,
-//       token: reminder.token
-//     }
-//   })
-// };
-
-// updateNoteById(note) {
-//   const query = { _id: note.id };
-//   let newDate = new Date()
-//   return Reminder.findOneAndUpdate(query, {
-//     $set: {
-//       name: note.name,
-//       time: newDate,
-//       note: true,
-//       priority: false
-//     }
-//   })
-// };

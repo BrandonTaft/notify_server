@@ -13,8 +13,9 @@ const http = require("http").Server(app);
 const uuidv4 = require('uuid').v4;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 require('dotenv').config();
-
+// "mongoose": "^6.0.14",
 const socketIO = require('socket.io')(http, {
   cors: {
     origin: "<http://192.168.1.26:8081>"
@@ -54,39 +55,39 @@ let chatRooms = [];
 let organizations = [];
 
 socketIO.on("connection", (socket) => {
+  const orgId = crypto.randomBytes(16).toString("hex");
   console.log(`⚡: ${socket.id} user just connected!`);
 
-  socket.on("createRoom", ({ id, name, organization }) => {
+  socket.on("createRoom", ({ roomId, roomName, organization }) => {
 
-    socket.join(name);
+    socket.join(roomName);
 
-    chatRooms.unshift({ id, name, organization, messages: [] });
+    chatRooms.unshift({ roomId, roomName, organization, messages: [] });
 
-    organizations.push({organization, org_id: generateID()})
+    organizations.push({organization, org_id: orgId})
 
     const authorizedChatRooms = chatRooms.filter(chatRoom => chatRoom.organization === organization)
 
     socketIO.emit("chatRoomList", authorizedChatRooms);
   });
 
-  socket.on("findRoom", (id) => {
-    //👇🏻 Filters the array by the ID
-    let result = chatRooms.filter((room) => room.id == id);
-    //👇🏻 Sends the messages to the app
+  socket.on("findRoom", (roomId) => {
+    let result = chatRooms.filter((room) => room.roomId == roomId);
     socketIO.emit("foundRoom", result[0].messages);
   });
 
   socket.on("newMessage", (data) => {
     console.log("GOT NEW MESSAGE", data)
-    const { room_id, message, user, user_id, profile_image, organization,reactions, timestamp } = data;
-    let result = chatRooms.filter((room) => room.id == room_id);
+    const { roomId, message, user, userId, profileImage, organization, reactions, timestamp } = data;
+    let result = chatRooms.filter((room) => room.roomId == roomId);
+    const messageId = crypto.randomBytes(16).toString("hex");
     const newMessage = {
-      id: generateID(),
-      room_id,
+      messageId,
+      roomId,
       text: message,
       user,
-      user_id,
-      profile_image,
+      userId,
+      profileImage,
       time: `${timestamp.hour}:${timestamp.mins}`,
       reactions
     };
@@ -98,22 +99,12 @@ socketIO.on("connection", (socket) => {
 
   socket.on("newReaction", (data) => {
     console.log("GOT NEW Reaction", data)
-    const { room_id, id, reaction } = data;
-    let room = chatRooms.filter((room) => room.id == room_id);
-    let message = room[0].messages.filter((message) => message.id === id)
+    const { roomId, messageId, reaction } = data;
+    let room = chatRooms.filter((room) => room.roomId == roomId);
+    let message = room[0].messages.filter((message) => message.messageId === messageId)
     if (message[0]) {
       message[0].reactions[reaction]++
     }
-
-    // const newMessage = {
-    // 	id: generateID(),
-    //   room_id,
-    // 	text: message,
-    // 	user,
-    // 	time: `${timestamp.hour}:${timestamp.mins}`,
-    //   reactions
-    // };
-    // result[0].messages.push(newMessage);
     socketIO.emit("newReaction", message[0]);
     console.log("RESULTS", message[0])
     console.log("CHATROOMS", chatRooms[0].messages)
