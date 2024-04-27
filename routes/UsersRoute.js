@@ -2,6 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const controller = require('../controllers/user.controller');
+const authenticateUser = require('../authMiddleware/auth');
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const multer = require('multer');
@@ -21,9 +22,9 @@ router.use(session({
     cookie: { secure: false }
 }));
 
-router.get('/', controller.getAllUsers)
+router.get('/', authenticateUser, controller.getAllUsers)
 
-router.get('/active', controller.getAllLoggedInUsers)
+router.get('/active', authenticateUser, controller.getAllLoggedInUsers)
 
 router.post("/register", controller.registerUser)
 
@@ -31,11 +32,11 @@ router.post("/login", controller.logInUser);
 
 router.post('/logout', controller.logOutUser);
 
-router.put('/update', controller.updateUserProfile);
+router.put('/update', authenticateUser, controller.updateUserProfile);
 
 router.put('/add-note', controller.addNote);
 
-router.post('/notes', controller.getUserNotes);
+router.post('/notes', authenticateUser, controller.getUserNotes);
 
 router.put('/edit-note', controller.updateNoteById);
 

@@ -47,12 +47,11 @@ exports.logInUser = (req, res) => {
                         existingUser.isLoggedIn = true;
                         existingUser.save();
                         const token = jwt.sign(
-                            { userName: userName },
-                            process.env.JWT_SECRET_KEY,
-                            { expiresIn: process.env.JWT_EXPIRES_IN }
+                            { id: existingUser._id, userName: userName },
+                            process.env.JWT_SECRET_KEY
                         );
                         res.status(201).json({
-                            sucess: true,
+                            success: true,
                             token,
                             existingUser,
                         });

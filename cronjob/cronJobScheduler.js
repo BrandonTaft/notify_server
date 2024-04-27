@@ -2,10 +2,10 @@
 const CronJob = require('cron').CronJob;
 const notifications = require('./notifications');
 
-function start() {
+function startCronJobScheduler() {
   new CronJob(
-    //'0 * * * *', //run every hour
-    '00 * * * * *', //run every minute
+    '0 * * * *', //run every hour
+    //'00 * * * * *', //run every minute
     () => {
       const time = new Date();
       const currentTime = time.getHours();
@@ -18,5 +18,5 @@ function start() {
 }
 
 module.exports = {
-  start,
+  startCronJobScheduler,
 };

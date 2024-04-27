@@ -8,6 +8,7 @@ const cors = require('cors')
 const config = require('./config/Config');
 const users = require('./routes/UsersRoute');
 const reminders = require('./routes/RemindersRoute');
+const scheduler = require('./cronjob/cronJobScheduler');
 const app = express();
 const http = require("http").Server(app);
 const uuidv4 = require('uuid').v4;
@@ -15,7 +16,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 require('dotenv').config();
-// "mongoose": "^6.0.14",
 const socketIO = require('socket.io')(http, {
   cors: {
     origin: "<http://192.168.1.26:8081>"
@@ -49,16 +49,17 @@ app.use((_, res, next) => {
   next();
 });
 
-const generateID = () => Math.random().toString(36).substring(2, 10);
+scheduler.startCronJobScheduler();
 
 let chatRooms = [];
 let organizations = [];
 
 socketIO.on("connection", (socket) => {
   const orgId = crypto.randomBytes(16).toString("hex");
+  const roomId = crypto.randomBytes(16).toString("hex");
   console.log(`⚡: ${socket.id} user just connected!`);
 
-  socket.on("createRoom", ({ roomId, roomName, organization }) => {
+  socket.on("createRoom", ({ roomName, organization }) => {
 
     socket.join(roomName);
 

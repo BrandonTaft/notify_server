@@ -3,7 +3,8 @@ const express = require('express');
 const session = require('express-session');
 const controller = require('../controllers/reminder.controller');
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
+const authenticateUser = require('../authMiddleware/auth');
 require('dotenv').config()
 
 //********************* Middleware *********************//
@@ -21,9 +22,9 @@ router.use(session({
     cookie: { secure: false }
 }));
 
-router.post('/', controller.getAllReminders);
+router.post('/', authenticateUser, controller.getAllReminders);
 
-router.post('/add-reminder', controller.addReminder);
+router.post('/add-reminder', authenticateUser, controller.addReminder);
 
 router.post('/update', controller.updateById);
 
