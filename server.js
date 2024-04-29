@@ -125,27 +125,6 @@ app.get("/chatrooms/:org", (req, res) => {
   res.json(authorizedChatRooms);
 });
 
-
-// const storage = multer.diskStorage({
-//   destination(req, file, callback) {
-//     callback(null, './public/images');
-//   },
-//   filename(req, file, callback) {
-//     console.log("REQQQ", file)
-//     callback(null, `${file.originalname}`);
-//   },
-// });
-
-// const upload = multer({ storage });
-
-// app.post('/api/profile-image', upload.single('photo'), (req, res) => {
-//   console.log('file', req.file);
-//   console.log('body', req.body.userId);
-//   res.status(200).json({
-//     message: 'success!',
-//   });
-// });
-
 //******Catch 404 Errors And Forward To Error Handler*****//
 app.use(function (req, res, next) {
   const err = new Error('Not Found');
