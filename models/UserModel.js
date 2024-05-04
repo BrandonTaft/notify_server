@@ -12,7 +12,7 @@ const UserSchema = new mongoose.Schema({
     },
     organization: String,
     profileImage: String,
-    backgroundImage: String,
+    bannerImage: String,
     isLoggedIn: Boolean,
     token: String,
     deviceId: String,

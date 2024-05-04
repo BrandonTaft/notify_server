@@ -32,6 +32,8 @@ router.post("/login", controller.logInUser);
 
 router.post('/logout', controller.logOutUser);
 
+router.delete('/delete', authenticateUser, controller.deleteUser);
+
 router.put('/update', authenticateUser, controller.updateUserProfile);
 
 router.put('/add-note', controller.addNote);
@@ -44,16 +46,19 @@ router.post('/delete-note', controller.deleteNoteById);
 
 const storage = multer.diskStorage({
     destination(req, file, callback) {
-        callback(null, './public/images');
+        if (file.fieldname === "profileImage") {
+            callback(null, './public/images');
+        } else {
+            callback(null, './public/banners');
+        }
     },
     filename(req, file, callback) {
         callback(null, `${file.originalname}`);
     },
 });
+
 const upload = multer({ storage });
 
-router.post('/profile-image', upload.single('photo'), (req, res) => {
-    res.status(200).json({ success: true });
-});
+router.post('/profile-image', upload.any(), controller.updateProfileImage);
 
 module.exports = router;

@@ -83,13 +83,53 @@ exports.logOutUser = (req, res) => {
         })
 };
 
+exports.deleteUser = (req, res) => {
+    const { userId } = req.body.user;
+    User.deleteOne({ _id: userId })
+        .then((result) => {
+            if(result.deletedCount === 1) {
+                res.status(200).json({ success: true, message: "Profile was deleted" });
+            } else {
+                res.status(404).json({ success: false, message: "There was an error deleting the profile" });
+            }
+        })
+};
+
+
 exports.updateUserProfile = (req, res) => {
     let userId = req.body.userId;
     let updatedProfileData = req.body.updatedProfileData
     User.findOne({ _id: userId })
         .then(async existingUser => {
+            console.log("IRANN", existingUser.userName.toLowerCase(),updatedProfileData.userName.toLowerCase() )
+            if (existingUser.userName.toLowerCase() === updatedProfileData.userName.toLowerCase()) {
+                Object.assign(existingUser, {organization: updatedProfileData.organization})
+                existingUser.save();
+                res.status(201).json({ success: true, message: "Updated user profile" });
+            } else {
+                User.findOne({ userName: updatedProfileData.userName }).collation({ locale: 'en', strength: 2 })
+                    .then((result) => {
+                        
+                        if (result === null) {
+                            Object.assign(existingUser, updatedProfileData)
+                            existingUser.save();
+                            res.status(201).json({ success: true, message: "Updated user profile" });
+                        } else {
+                            res.status(200).json({ success: false, message: "That name is taken" });
+                        }
+                    })
+            }
+        })
+};
+
+exports.updateProfileImage = (req, res) => {
+    let image = req.body.image;
+    let userId = req.body.userId;
+    let imageType = req.body.imageType;
+    User.findOne({ _id: userId })
+        .then(async existingUser => {
             if (existingUser) {
-                Object.assign(existingUser, updatedProfileData)
+                existingUser[imageType] = image
                 existingUser.save();
                 res.status(201).json({ success: true, message: "Updated user profile" });
             } else {
@@ -97,6 +137,22 @@ exports.updateUserProfile = (req, res) => {
             }
         })
 };
+
+exports.updateBannerImage = (req, res) => {
+    let bannerImage = req.body.bannerImage;
+    let userId = req.body.userId;
+    User.findOne({ _id: userId })
+        .then(async existingUser => {
+            if (existingUser) {
+                existingUser.bannerImage = bannerImage
+                existingUser.save();
+                res.status(201).json({ success: true, message: "Updated banner" });
+            } else {
+                res.status(404).json({ success: false, message: "User not found" });
+            }
+        })
+};
+
 
 exports.getAllUsers = (req, res) => {
     User.find()
@@ -121,13 +177,13 @@ exports.getAllLoggedInUsers = (req, res) => {
 exports.getUserNotes = (req, res) => {
     const userId = req.body.userId;
     User.findOne({ _id: userId }).collation({ locale: 'en', strength: 2 })
-      .then(async user => {
-        res.status(200).json({ success: true, notes: user.notes });
-      })
-      .catch(() => {
-        res.status(404).json({ success: false, message: "Unable to locate user" });
-      })
-  };
+        .then(async user => {
+            res.status(200).json({ success: true, notes: user.notes });
+        })
+        .catch(() => {
+            res.status(404).json({ success: false, message: "Unable to locate user" });
+        })
+};
 
 exports.addNote = (req, res) => {
     let userId = req.body.userId;
@@ -148,27 +204,27 @@ exports.updateNoteById = (req, res) => {
     const userId = req.body.userId;
     const updatedNote = req.body.updatedNote;
     User.findOneAndUpdate({ _id: userId, 'notes._id': updatedNote.noteId },
-      { $set: { "notes.$": {...updatedNote, _id: updatedNote.noteId } } })
-      .then(async note => {
-        if (note !== null) {
-          res.status(200).json({ success: true, message: "note has been updated" });
-        } else {
-          res.status(404).json({ success: false, message: "Unable to locate user" });
-        }
-      })
-      .catch(() => {
-        res.status(404).json({ success: false, message: "Unable to locate user" });
-      })
-  };
+        { $set: { "notes.$": { ...updatedNote, _id: updatedNote.noteId } } })
+        .then(async note => {
+            if (note !== null) {
+                res.status(200).json({ success: true, message: "note has been updated" });
+            } else {
+                res.status(404).json({ success: false, message: "Unable to locate user" });
+            }
+        })
+        .catch(() => {
+            res.status(404).json({ success: false, message: "Unable to locate user" });
+        })
+};
 
-  exports.deleteNoteById = async (req, res) => {
+exports.deleteNoteById = async (req, res) => {
     const noteId = req.body.noteId;
     const userId = req.body.userId;
     User.findOneAndUpdate({ user_id: userId }, { $pull: { notes: { _id: noteId } } })
-      .then(async user => {
-        res.status(200).json({ success: true, message: "Note was deleted" });
-      })
-      .catch(() => {
-        res.status(404).json({ success: false, message: "Unable to locate note" });
-      })
-  };
+        .then(async user => {
+            res.status(200).json({ success: true, message: "Note was deleted" });
+        })
+        .catch(() => {
+            res.status(404).json({ success: false, message: "Unable to locate note" });
+        })
+};

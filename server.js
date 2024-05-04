@@ -73,7 +73,10 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("findRoom", (roomId) => {
+    console.log("IDDDDDD", roomId)
+    console.log("CHATROOOOOOMS", chatRooms)
     let result = chatRooms.filter((room) => room.roomId == roomId);
+    console.log("RESULTTTT", result)
     socketIO.emit("foundRoom", result[0].messages);
   });
 
@@ -117,12 +120,16 @@ socketIO.on("connection", (socket) => {
   });
 });
 
+// app.get("/chatrooms/:org", (req, res) => {
+//   console.log("CREDS", req.query)
+//   console.log("params", req.params)
+//   console.log('chatrooms', chatRooms)
+//   let authorizedChatRooms = chatRooms.filter((room) => room.organization == req.params.org);
+//   res.json(authorizedChatRooms);
+// });
 app.get("/chatrooms/:org", (req, res) => {
-  console.log("CREDS", req.query)
-  console.log("params", req.params)
-  console.log('chatrooms', chatRooms)
-  let authorizedChatRooms = chatRooms.filter((room) => room.organization == req.params.org);
-  res.json(authorizedChatRooms);
+  
+  res.json(chatRooms);
 });
 
 //******Catch 404 Errors And Forward To Error Handler*****//
