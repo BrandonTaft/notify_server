@@ -133,26 +133,10 @@ exports.updateProfileImage = (req, res) => {
                 existingUser.save();
                 res.status(201).json({ success: true, message: "Updated user profile" });
             } else {
-                res.status(404).json({ success: false, message: "User not found" });
+                res.status(404).json({ success: false, message: "An unexpected error has occurred" });
             }
         })
 };
-
-exports.updateBannerImage = (req, res) => {
-    let bannerImage = req.body.bannerImage;
-    let userId = req.body.userId;
-    User.findOne({ _id: userId })
-        .then(async existingUser => {
-            if (existingUser) {
-                existingUser.bannerImage = bannerImage
-                existingUser.save();
-                res.status(201).json({ success: true, message: "Updated banner" });
-            } else {
-                res.status(404).json({ success: false, message: "User not found" });
-            }
-        })
-};
-
 
 exports.getAllUsers = (req, res) => {
     User.find()
@@ -160,7 +144,7 @@ exports.getAllUsers = (req, res) => {
             res.status(200).json({ success: true, users: users });
         })
         .catch(() => {
-            res.status(404).json({ success: false, message: "Unable to load database" });
+            res.status(404).json({ success: false, message: "Unable to load users" });
         })
 };
 
@@ -170,7 +154,7 @@ exports.getAllLoggedInUsers = (req, res) => {
             res.status(200).json({ success: true, users: users });
         })
         .catch(() => {
-            res.status(404).json({ success: false, message: "Unable to load database" });
+            res.status(404).json({ success: false, message: "Unable to load users" });
         })
 };
 

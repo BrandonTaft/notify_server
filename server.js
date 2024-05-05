@@ -9,6 +9,7 @@ const config = require('./config/Config');
 const users = require('./routes/UsersRoute');
 const reminders = require('./routes/RemindersRoute');
 const scheduler = require('./cronjob/cronJobScheduler');
+const chatRoomController = require('./controllers/chatroom.controller');
 const app = express();
 const http = require("http").Server(app);
 const uuidv4 = require('uuid').v4;
@@ -54,22 +55,23 @@ scheduler.startCronJobScheduler();
 let chatRooms = [];
 let organizations = [];
 
+const orgId = crypto.randomBytes(16).toString("hex");
+
 socketIO.on("connection", (socket) => {
-  const orgId = crypto.randomBytes(16).toString("hex");
-  const roomId = crypto.randomBytes(16).toString("hex");
+
   console.log(`⚡: ${socket.id} user just connected!`);
 
-  socket.on("createRoom", ({ roomName, organization }) => {
+  socket.on("createRoom", ({ roomName, organization, isPrivate }) => {
 
     socket.join(roomName);
 
-    chatRooms.unshift({ roomId, roomName, organization, messages: [] });
+    chatRoomController.createChatRoom(roomName, organization, isPrivate)
+      .then((result) => {
+        chatRooms.unshift(result);
+        socketIO.emit("chatRoomList", chatRooms);
+      })
 
-    organizations.push({organization, org_id: orgId})
-
-    const authorizedChatRooms = chatRooms.filter(chatRoom => chatRoom.organization === organization)
-
-    socketIO.emit("chatRoomList", authorizedChatRooms);
+    organizations.push({ organization, org_id: orgId })
   });
 
   socket.on("findRoom", (roomId) => {
@@ -128,7 +130,8 @@ socketIO.on("connection", (socket) => {
 //   res.json(authorizedChatRooms);
 // });
 app.get("/chatrooms/:org", (req, res) => {
-  
+  let authorizedChatRooms = chatRooms.filter((room) => room.organization == req.params.org);
+  console.log(authorizedChatRooms)
   res.json(chatRooms);
 });
 

@@ -4,11 +4,12 @@ const ChatRoomSchema = new mongoose.Schema({
     roomId: String,
     roomName: String,
     organization: String,
+    isPrivate: Boolean,
     messages: [
         {
             messageId: String,
             roomId: String,
-            message: String,
+            text: String,
             user: String,
             userId: String,
             profileImage: String,
