@@ -13,10 +13,8 @@ exports.getAllChatRooms = () => {
 };
 
 exports.createChatRoom = async (  roomName, organization, isPrivate, password) => {
-  const roomId = crypto.randomBytes(16).toString("hex");
   try {
     const chatRoom = new ChatRoom({
-      roomId: roomId,
       roomName: roomName,
       organization: organization,
       messages: [],

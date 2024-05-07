@@ -63,21 +63,23 @@ socketIO.on("connection", (socket) => {
 
   socket.on("createRoom", ({ roomName, organization, isPrivate }) => {
 
-    socket.join(roomName);
+    
 
     chatRoomController.createChatRoom(roomName, organization, isPrivate)
       .then((result) => {
         chatRooms.unshift(result);
         socketIO.emit("chatRoomList", chatRooms);
+        socket.join(result._id);
       })
 
     organizations.push({ organization, org_id: orgId })
+    console.log("ORGS", organizations)
   });
 
   socket.on("findRoom", (roomId) => {
     console.log("IDDDDDD", roomId)
     console.log("CHATROOOOOOMS", chatRooms)
-    let result = chatRooms.filter((room) => room.roomId == roomId);
+    let result = chatRooms.filter((room) => room._id == roomId);
     console.log("RESULTTTT", result)
     socketIO.emit("foundRoom", result[0].messages);
   });
@@ -85,7 +87,7 @@ socketIO.on("connection", (socket) => {
   socket.on("newMessage", (data) => {
     console.log("GOT NEW MESSAGE", data)
     const { roomId, message, user, userId, profileImage, organization, reactions, timestamp } = data;
-    let result = chatRooms.filter((room) => room.roomId == roomId);
+    let result = chatRooms.filter((room) => room._id == roomId);
     const messageId = crypto.randomBytes(16).toString("hex");
     const newMessage = {
       messageId,
@@ -122,14 +124,7 @@ socketIO.on("connection", (socket) => {
   });
 });
 
-// app.get("/chatrooms/:org", (req, res) => {
-//   console.log("CREDS", req.query)
-//   console.log("params", req.params)
-//   console.log('chatrooms', chatRooms)
-//   let authorizedChatRooms = chatRooms.filter((room) => room.organization == req.params.org);
-//   res.json(authorizedChatRooms);
-// });
-app.get("/chatrooms/:org", (req, res) => {
+app.get("/chatrooms", (req, res) => {
   let authorizedChatRooms = chatRooms.filter((room) => room.organization == req.params.org);
   console.log(authorizedChatRooms)
   res.json(chatRooms);
