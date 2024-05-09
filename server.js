@@ -68,8 +68,6 @@ socketIO.on("connection", (socket) => {
             socketIO.emit("chatRoomList", allRooms);
           })
         }
-        //chatRooms.unshift(result);
-        // socketIO.emit("chatRoomList", chatRooms);
         socket.join(result._id);
       })
 
@@ -78,10 +76,6 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("findRoom", (roomId) => {
-    console.log("IDDDDDD", roomId)
-   //console.log("CHATROOOOOOMS", chatRooms)
-   // let result = chatRooms.filter((room) => room._id == roomId);
-  //  console.log("RESULTTTT", result)
   ChatRoom.findOne({_id: roomId})
   .then(async existingRoom => {
     if(existingRoom) {
@@ -91,9 +85,7 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("newMessage", (data) => {
-    console.log("GOT NEW MESSAGE", data)
     const { roomId, message, user, userId, profileImage, organization, reactions, timestamp } = data;
-    // let result = chatRooms.filter((room) => room._id == roomId);
     const messageId = crypto.randomBytes(16).toString("hex");
     const newMessage = {
       messageId,
@@ -118,29 +110,16 @@ socketIO.on("connection", (socket) => {
         socketIO.emit("chatRoomList", chatRooms)
       })
     })
-    // result[0].messages.push(newMessage);
-    // let authorizedChatRooms = chatRooms.filter((room) => room.organization == organization);
-    
-    // socketIO.emit("chatRoomList", authorizedChatRooms);
-    // socketIO.emit("newMessage", result[0].messages);
   });
 
   socket.on("newReaction", (data) => {
-    console.log("GOT NEW Reaction", data)
     let { roomId, messageId, reaction } = data;
-    //let room = chatRooms.filter((room) => room.roomId == roomId);
-    // ChatRoom.findOne({ _id: roomId }).then((room) => {
-    //   let message = room.messages.filter((message) => message.messageId === messageId)
-    //   if (message) {
-    //     message.reactions[reaction]++
-    //   }
-    //   socketIO.emit("newReaction", message);
-    // })
     ChatRoom.findOneAndUpdate({ _id: roomId, 'messages.messageId': messageId },
-      `messages.reactions.${reaction}++` )
-    .then(async results => {console.log("RESULLLLT", results)})
-    // console.log("RESULTS", message[0])
-    // console.log("CHATROOMS", chatRooms[0].messages)
+    {$inc:{[`messages.$.reactions.${reaction}`]:1}}, {new: true},)
+    .then(async result => {
+      let message = result.messages.filter((message) => message.messageId === messageId)
+      socketIO.emit("newReaction", message[0]);
+    })
   });
 
   socket.on("disconnect", () => {

@@ -26,7 +26,6 @@ exports.createChatRoom = async (  roomName, organization, isPrivate, password) =
     });
     let savedChatRoom = await chatRoom.save();
     if (savedChatRoom !== null) {
-      console.log("Saved Chatroom", savedChatRoom)
       return savedChatRoom
     }
   } catch (error) {
