@@ -8,6 +8,14 @@ const OrganizationSchema = new mongoose.Schema({
     },
     password: String,
     isPrivate: Boolean,
+    users: [{
+        name: String,
+        userId: String
+    }],
+    rooms: [{
+        name: String,
+        roomId: String
+    }]
 });
 OrganizationSchema.index(
     {

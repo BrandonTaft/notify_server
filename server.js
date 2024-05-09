@@ -8,6 +8,7 @@ const cors = require('cors')
 const config = require('./config/Config');
 const users = require('./routes/UsersRoute');
 const reminders = require('./routes/RemindersRoute');
+const organizations = require('./routes/OrganizationsRoute');
 const scheduler = require('./cronjob/cronJobScheduler');
 const chatRoomController = require('./controllers/chatroom.controller');
 const app = express();
@@ -17,6 +18,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const ChatRoom = require('./models/ChatRoomModel');
+const Organization = require('./models/OrganizationModel')
 require('dotenv').config();
 const socketIO = require('socket.io')(http, {
   cors: {
@@ -43,6 +45,7 @@ app.use(cookieParser());
 
 app.use('/api/reminders', reminders);
 app.use('/api/users', users);
+app.use('/api/org', organizations);
 
 app.use((_, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -52,9 +55,6 @@ app.use((_, res, next) => {
 });
 app.use(express.static(path.join(__dirname, 'public')));
 scheduler.startCronJobScheduler();
-
-
-let organizations = [];
 
 const orgId = crypto.randomBytes(16).toString("hex");
 
@@ -70,9 +70,17 @@ socketIO.on("connection", (socket) => {
         }
         socket.join(result._id);
       })
-
-    organizations.push({ organization, org_id: orgId })
-    console.log("ORGS", organizations)
+      Organization.findOne({ name: organization }).collation({ locale: 'en', strength: 2 })
+      .then(async existingOrg => {
+        if (existingOrg === null) {
+          const org = new Organization({
+           name: organization,
+            password: hash,
+            organization: organization,
+            isLoggedIn: false
+        });
+        }
+      })
   });
 
   socket.on("findRoom", (roomId) => {
