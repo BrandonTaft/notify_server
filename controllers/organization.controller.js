@@ -66,16 +66,15 @@ exports.createOrganization = async (req, res) => {
 
 
 
-// exports.getAllReminders = (req, res) => {
-//   const userId = req.body.userId;
-//   Reminders.findOne({ user_id: userId }).collation({ locale: 'en', strength: 2 })
-//     .then(async user => {
-//       res.status(200).json({ success: true, reminders: user.reminders });
-//     })
-//     .catch(() => {
-//       res.status(404).json({ success: false, message: "Unable to locate user" });
-//     })
-// };
+exports.getAllOrgs = (req, res) => {
+  Organization.find()
+    .then(async orgs => {
+      res.status(200).json({ success: true, orgs: orgs });
+    })
+    .catch(() => {
+      res.status(404).json({ success: false, message: "Unable to complete request" });
+    })
+};
 
 
 // exports.updateById = (req, res) => {

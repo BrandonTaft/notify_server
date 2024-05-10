@@ -22,7 +22,7 @@ router.use(session({
     cookie: { secure: false }
 }));
 
-//router.get('/', authenticateUser, controller.getAllUsers)
+router.get('/', orgController.getAllOrgs)
 
 router.post('/create', orgController.createOrganization)
 

@@ -136,7 +136,7 @@ socketIO.on("connection", (socket) => {
   });
 });
 
-app.get("/chatrooms", chatRoomController.getAllChatRooms);
+app.get("/api/chatrooms", chatRoomController.getAllChatRooms);
 
 //******Catch 404 Errors And Forward To Error Handler*****//
 app.use(function (req, res, next) {
