@@ -26,9 +26,13 @@ router.post('/', authenticateUser, controller.getAllReminders);
 
 router.post('/add-reminder', authenticateUser, controller.addReminder);
 
-router.post('/update', controller.updateById);
+router.post('/update', authenticateUser, controller.updateById);
 
-router.post('/delete', controller.deleteById);
+router.post('/delete', authenticateUser, controller.deleteById);
+
+router.post('/complete', authenticateUser, controller.completeById);
+
+
 
 
 //*********** Get All Notes ***********//

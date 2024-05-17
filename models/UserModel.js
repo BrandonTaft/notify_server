@@ -14,7 +14,7 @@ const UserSchema = new mongoose.Schema({
     profileImage: String,
     bannerImage: String,
     isLoggedIn: Boolean,
-    token: String,
+    expoPushToken: String,
     deviceId: String,
     notes: [
         {

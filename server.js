@@ -70,17 +70,6 @@ socketIO.on("connection", (socket) => {
         }
         socket.join(result._id);
       })
-      Organization.findOne({ name: organization }).collation({ locale: 'en', strength: 2 })
-      .then(async existingOrg => {
-        if (existingOrg === null) {
-          const org = new Organization({
-           name: organization,
-            password: hash,
-            organization: organization,
-            isLoggedIn: false
-        });
-        }
-      })
   });
 
   socket.on("findRoom", (roomId) => {

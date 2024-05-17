@@ -6,9 +6,14 @@ const RemindersSchema = new mongoose.Schema({
   },
   reminders: [
     {
+      reminderId: String,
       title: String,
       requiresNotification: Boolean,
-      dueDay: Number
+      dueDay: String,
+      expoPushToken: String,
+      isChecked: Boolean,
+      isCompleted: Boolean,
+      isDeleted: Boolean
     }
   ]
 });

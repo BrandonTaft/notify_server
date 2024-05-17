@@ -1,4 +1,5 @@
 const User = require('../models/UserModel');
+const Organization = require('../models/OrganizationModel');
 const multer = require('multer');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -6,7 +7,7 @@ const salt = 10;
 require('dotenv').config();
 
 exports.registerUser = (req, res) => {
-    const { userName, password, organization } = req.body.user;
+    const { userName, password, organization, expoPushToken } = req.body.user;
     User.findOne({ userName: userName }).collation({ locale: 'en', strength: 2 })
         .then(async existingUser => {
             if (existingUser === null) {
@@ -22,11 +23,17 @@ exports.registerUser = (req, res) => {
                             userName: userName,
                             password: hash,
                             organization: organization,
-                            isLoggedIn: false
+                            isLoggedIn: false,
+                            expoPushToken: expoPushToken
                         });
 
                         let savedUser = await user.save()
                         if (savedUser !== null) {
+                            await Organization.updateOne(
+                                {name:organization},
+                                { $push: { users: {name:userName, userId: savedUser._id} } },
+                                ).collation({ locale: 'en', strength: 2 }
+                            )
                             res.status(201).json({ success: true, message: "User is registered" })
                         }
                     }
