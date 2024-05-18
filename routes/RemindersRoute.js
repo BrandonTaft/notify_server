@@ -32,6 +32,8 @@ router.post('/delete', authenticateUser, controller.deleteById);
 
 router.post('/complete', authenticateUser, controller.completeById);
 
+router.get('/due', controller.getAllDueReminders);
+
 
 
 

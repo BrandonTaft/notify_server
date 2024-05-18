@@ -8,8 +8,8 @@ exports.getAllReminders = (req, res) => {
   Reminders.findOne({ user_id: userId }).collation({ locale: 'en', strength: 2 })
     .then(async reminders => {
       console.log(reminders)
-      if(reminders) {
-      res.status(200).json({ success: true, reminders: reminders.reminders });
+      if (reminders) {
+        res.status(200).json({ success: true, reminders: reminders.reminders });
       } else {
         res.status(200).json({ success: false, message: "No reminders saved!" });
       }
@@ -20,9 +20,42 @@ exports.getAllReminders = (req, res) => {
     })
 };
 
+// exports.getAllDueReminders = (req, res) => {
+//  const date = new Date();
+//  const currentDate = date.toLocaleDateString('en-US') 
+// Reminders.aggregate([
+//   {$unwind:"$reminders"},
+// {$match:{"reminders.dueDay":  currentDate}},
+// ])
+//     .then(async reminders => {
+//       console.log(reminders)
+//       if(reminders) {
+//       res.status(200).json({ success: true, reminders: reminders });
+//       } else {
+//         res.status(200).json({ success: false, message: "No reminders saved!" });
+//       }
+//     })
+//     .catch((error) => {
+//       console.log(error)
+//       res.status(404).json({ success: false, message: "Unable to locate user" });
+//     })
+// };
+
+exports.getAllDueReminders = async (req, res) => {
+  const date = new Date();
+  const currentDate = date.toLocaleDateString('en-US')
+  let data = await Reminders.aggregate([
+    { $unwind: "$reminders" },
+    { $match: { "reminders.dueDay": currentDate } },
+  ])
+  console.log("DATAAAa",data)
+
+};
+
+
 exports.addReminder = async (req, res) => {
   // const reminderId = crypto.randomBytes(16).toString("hex");
- console.log("KKKK",req.body)
+  console.log("KKKK", req.body)
   const userId = req.body.userId;
   const reminder = req.body.reminder;
   try {
@@ -48,7 +81,7 @@ exports.updateById = (req, res) => {
   const updatedReminder = req.body.updatedReminder;
   console.log("TESSST", req.body)
   Reminders.findOneAndUpdate({ user_id: userId, 'reminders.reminderId': updatedReminder.reminderId },
-    { $set: { "reminders.$": {...updatedReminder } } })
+    { $set: { "reminders.$": { ...updatedReminder } } })
     .then(async reminder => {
       if (reminder !== null) {
         res.status(200).json({ success: true, message: "Reminder has been updated" });
@@ -75,7 +108,7 @@ exports.clearById = async (req, res) => {
 exports.deleteById = async (req, res) => {
   const reminderId = req.body.reminderId;
   const userId = req.body.userId;
-  Reminders.findOneAndUpdate({ user_id: userId, "reminders.reminderId": reminderId}, { $set: {"reminders.$.isDeleted": true } })
+  Reminders.findOneAndUpdate({ user_id: userId, "reminders.reminderId": reminderId }, { $set: { "reminders.$.isDeleted": true } })
     .then(async user => {
       res.status(200).json({ success: true, message: "Reminder was deleted" });
     })
@@ -87,7 +120,7 @@ exports.deleteById = async (req, res) => {
 exports.completeById = async (req, res) => {
   const reminderId = req.body.reminderId;
   const userId = req.body.userId;
-  Reminders.findOneAndUpdate({ user_id: userId, "reminders.reminderId": reminderId}, { $set: {"reminders.$.isCompleted": true } })
+  Reminders.findOneAndUpdate({ user_id: userId, "reminders.reminderId": reminderId }, { $set: { "reminders.$.isCompleted": true } })
     .then(async user => {
       res.status(200).json({ success: true, message: "Reminder was deleted" });
     })

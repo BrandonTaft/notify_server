@@ -10,6 +10,7 @@ const RemindersSchema = new mongoose.Schema({
       title: String,
       requiresNotification: Boolean,
       dueDay: String,
+      dueTime: Object,
       expoPushToken: String,
       isChecked: Boolean,
       isCompleted: Boolean,
