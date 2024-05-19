@@ -3,57 +3,46 @@ const { Expo } = require('expo-server-sdk')
 require('dotenv').config()
 
 async function checkForDueNotifications() {
-    console.log("I CHECKED FOR REMINDERS DUE")
     let time = new Date();
     const currentDate = time.toLocaleDateString('en-US');
     const currentHour = time.getHours();
     const currentMinute = time.getMinutes();
-    
+
     let remindersDueToday = await Reminders.aggregate([
         { $unwind: "$reminders" },
         { $match: { "reminders.dueDay": currentDate } },
-    ])
-    console.log("Reminders due today are : ", remindersDueToday)
-    // remindersDueToday = await controller.findAll()
+    ]);
+
+    if (remindersDueToday.length > 0) {
+        console.log("Reminders due today are : ", remindersDueToday)
+    } else {
+        console.log("There are no reminders due today!")
+    };
+
     let remindersDueThisMinute = remindersDueToday.filter((item) => {
-        console.log(item.reminders.dueTime)
-        console.log({"currentHour":currentHour, "currentMin": currentMinute})
-        item.reminders.dueTime.hours === currentHour
-                &&
-                item.reminders.dueTime.minutes === currentMinute
-                &&
-                item.reminders.isDeleted === false
-                &&
-                item.reminders.isCompleted === false
-    })
-    
-    // for (let i = 0; i < remindersDueToday.length; i++) {
-    //     remindersDueThisMinute = [...remindersDueToday[i].reminders.filter((item) => {
-    //         return (
-    //             item.dueTime.hour === currentHour
-    //             &&
-    //             item.dueTime.minute === currentMinute
-    //             &&
-    //             item.isDeleted === false
-    //             &&
-    //             item.isCompleted === false
-    //         )
-    //     })]
-    // }
+        return (
+            item.reminders.dueTime.hours === currentHour
+            &&
+            item.reminders.dueTime.minutes === currentMinute
+            &&
+            item.reminders.isDeleted === false
+            &&
+            item.reminders.isCompleted === false
+        )
+    });
 
     if (remindersDueThisMinute.length > 0) {
-        console.log("IRANNNN")
         let expo = new Expo();
         let messages = [];
         for (let i = 0; i < remindersDueThisMinute.length; i++) {
-            let pushToken = remindersDueThisMinute[i].expoPushToken
+            let pushToken = remindersDueThisMinute[i].reminders.expoPushToken
             if (!Expo.isExpoPushToken(pushToken)) {
                 console.error(`Push token ${pushToken} is not a valid Expo push token`);
             } else {
                 messages.push({
                     to: pushToken,
                     sound: 'default',
-                    body: remindersDueThisMinute[i].title
+                    body: remindersDueThisMinute[i].reminders.title
                 })
             }
         }
@@ -71,14 +60,17 @@ async function checkForDueNotifications() {
                 }
             }
         })();
+        
         // The receipts may contain error codes to which you MUST RESPOND.
         let receiptIds = [];
         for (let ticket of tickets) {
             if (ticket.id) {
                 receiptIds.push(ticket.id);
             }
-        }
+        };
+        
         let receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+        
         (async () => {
             // to retrieve batches of receipts from the Expo service.
             for (let chunk of receiptIdChunks) {
@@ -105,7 +97,7 @@ async function checkForDueNotifications() {
             }
         })();
     }
-}
+};
 
 module.exports = {
     checkForDueNotifications

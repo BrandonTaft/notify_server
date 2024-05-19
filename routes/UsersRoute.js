@@ -36,7 +36,7 @@ router.delete('/delete', authenticateUser, controller.deleteUser);
 
 router.put('/update', authenticateUser, controller.updateUserProfile);
 
-router.put('/add-note', controller.addNote);
+router.post('/add-note', authenticateUser, controller.addNote);
 
 router.post('/notes', authenticateUser, controller.getUserNotes);
 

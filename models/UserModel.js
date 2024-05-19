@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema({
         {
             body: String,
             date: Date,
-            isDeleted: String
+            isDeleted: Boolean
         }
     ]
 

@@ -184,7 +184,7 @@ exports.addNote = (req, res) => {
             if (existingUser) {
                 existingUser.notes.push(note)
                 existingUser.save();
-                res.status(201).json({ success: true, message: "Note added" });
+                res.status(201).json({ success: true, message: "Note added", notes: existingUser.notes });
             } else {
                 res.status(404).json({ success: false, message: "User not found" });
             }
