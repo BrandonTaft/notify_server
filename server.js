@@ -10,6 +10,7 @@ const users = require('./routes/UsersRoute');
 const reminders = require('./routes/RemindersRoute');
 const organizations = require('./routes/OrganizationsRoute');
 const scheduler = require('./cronjob/cronJobScheduler');
+const userController = require('./controllers/user.controller');
 const chatRoomController = require('./controllers/chatroom.controller');
 const app = express();
 const http = require("http").Server(app);
@@ -18,7 +19,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const ChatRoom = require('./models/ChatRoomModel');
-const Organization = require('./models/OrganizationModel')
+const Organization = require('./models/OrganizationModel');
+const authenticateUser = require('./authMiddleware/auth');
 require('dotenv').config();
 const socketIO = require('socket.io')(http, {
   cors: {
@@ -60,20 +62,64 @@ const orgId = crypto.randomBytes(16).toString("hex");
 
 socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected!`);
-  socket.on("createRoom", ({ roomName, organization, isPrivate }) => {
-    chatRoomController.createChatRoom(roomName, organization, isPrivate)
+  socket.on("createRoom", ({ roomId, roomName, ownerId, ownerName,  isPrivate, organization }) => {
+    userController.createChatRoom(roomId, roomName, ownerId, ownerName,  isPrivate, organization)
       .then((result) => {
         if(result) {
-          ChatRoom.find().then((allRooms) => {
+          ChatRoom.find({isPrivate: false}).then((allRooms) => {
             socketIO.emit("chatRoomList", allRooms);
           })
         }
-        socket.join(result._id);
+        socket.join(result.roomId);
       })
   });
 
+  socket.on("createPrivateRoom", ({ roomId, reciever, recieverId, senderId, sender }) => {
+    userController.createPrivateRoom(roomId, reciever, recieverId, senderId, sender)
+      .then((result) => {
+        // if(result) {
+        //   ChatRoom.find({ $or:[ {'roomName':ownerId || roomName}, {'ownerId': roomName || ownerId} ]}).then((allRooms) => {
+        //     socketIO.emit("privateRoomList", allRooms);
+        //   })
+        // }
+         socket.join(result.roomName);
+        console.log("RESULTTTT", result)
+      })
+  });
+
+  socket.on("newPrivateMessage", (data) => {
+    const { senderId, sender, receiver, receieverId, roomId, message, profileImage, reactions } = data;
+    const messageId = crypto.randomBytes(16).toString("hex");
+    const newMessage = {
+      messageId,
+      roomId,
+      text: message,
+      sender,
+      senderId,
+      receiver,
+      receieverId,
+      profileImage,
+      time: `${timestamp.hour}:${timestamp.mins}`,
+      reactions
+    };
+    userController.updatePrivateRoom(senderId, roomId, newMessage)
+    // ChatRoom.findOne({ roomId: roomId })
+    // .then(async existingChatRoom => {
+    //   if (existingChatRoom) {
+    //     existingChatRoom.messages.push(newMessage)
+    //        await existingChatRoom.save();
+    //           socketIO.emit("newMessage",existingChatRoom.messages);
+    //   }
+    //   ChatRoom.find({isPrivate: false}).then((allRooms) => {
+    //     console.log("ALLROOMS",allRooms)
+    //     socketIO.emit("chatRoomList", allRooms);
+    //   })
+    // })
+  });
+
+
   socket.on("findRoom", (roomId) => {
-  ChatRoom.findOne({_id: roomId})
+  ChatRoom.findOne({roomId: roomId})
   .then(async existingRoom => {
     if(existingRoom) {
       socketIO.emit("foundRoom", existingRoom.messages);
@@ -94,24 +140,23 @@ socketIO.on("connection", (socket) => {
       time: `${timestamp.hour}:${timestamp.mins}`,
       reactions
     };
-    ChatRoom.findOne({ _id: roomId })
+    ChatRoom.findOne({ roomId: roomId })
     .then(async existingChatRoom => {
       if (existingChatRoom) {
         existingChatRoom.messages.push(newMessage)
-              existingChatRoom.save();
+           await existingChatRoom.save();
               socketIO.emit("newMessage",existingChatRoom.messages);
       }
-    })
-    .then(() => {
-      ChatRoom.find().then((chatRooms) => {
-        socketIO.emit("chatRoomList", chatRooms)
+      ChatRoom.find({isPrivate: false}).then((allRooms) => {
+        console.log("ALLROOMS",allRooms)
+        socketIO.emit("chatRoomList", allRooms);
       })
     })
   });
 
   socket.on("newReaction", (data) => {
     let { roomId, messageId, reaction } = data;
-    ChatRoom.findOneAndUpdate({ _id: roomId, 'messages.messageId': messageId },
+    ChatRoom.findOneAndUpdate({ roomId: roomId, 'messages.messageId': messageId },
     {$inc:{[`messages.$.reactions.${reaction}`]:1}}, {new: true},)
     .then(async result => {
       let message = result.messages.filter((message) => message.messageId === messageId)
@@ -126,6 +171,8 @@ socketIO.on("connection", (socket) => {
 });
 
 app.get("/api/chatrooms", chatRoomController.getAllChatRooms);
+
+app.post("/api/private-chatrooms", authenticateUser, chatRoomController.getAllPrivateChatRooms);
 
 //******Catch 404 Errors And Forward To Error Handler*****//
 app.use(function (req, res, next) {

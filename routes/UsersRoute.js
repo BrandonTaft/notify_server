@@ -30,6 +30,8 @@ router.post("/register", controller.registerUser)
 
 router.post("/login", controller.logInUser);
 
+router.post("/refresh", authenticateUser, controller.refreshUser);
+
 router.post('/logout', controller.logOutUser);
 
 router.delete('/delete', authenticateUser, controller.deleteUser);
@@ -40,7 +42,7 @@ router.post('/add-note', authenticateUser, controller.addNote);
 
 router.post('/notes', authenticateUser, controller.getUserNotes);
 
-router.put('/edit-note', controller.updateNoteById);
+router.post('/edit-note', controller.updateNoteById);
 
 router.post('/delete-note', controller.deleteNoteById);
 

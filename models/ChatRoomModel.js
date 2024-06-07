@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 
 const ChatRoomSchema = new mongoose.Schema({
     roomId: String,
+    ownerId: String,
+    ownerName: String,
     roomName: String,
     organization: String,
     isPrivate: Boolean,

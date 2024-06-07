@@ -46,6 +46,7 @@ exports.registerUser = (req, res) => {
 
 exports.logInUser = (req, res) => {
     const { userName, password } = req.body.user;
+    console.log("LOGIN", req.body)
     User.findOne({ userName: userName }).collation({ locale: 'en', strength: 2 })
         .then(async existingUser => {
             if (existingUser) {
@@ -72,6 +73,25 @@ exports.logInUser = (req, res) => {
                 })
             } else {
                 res.status(404).json({ success: false, message: "User not found" });
+            }
+        })
+};
+
+exports.refreshUser = (req, res) => {
+    const  userId  = req.body.userId;
+    console.log(userId)
+    User.findOne({ _id: userId })
+        .then(async existingUser => {
+            if (existingUser) {
+                res.status(201).json({
+                    success: true,
+                    existingUser,
+                });
+            } else {
+                res.status(403).json({
+                    success: false,
+                    message: "Unable to authenticate user",
+                });
             }
         })
 };
@@ -112,7 +132,7 @@ exports.updateUserProfile = (req, res) => {
             if (existingUser.userName.toLowerCase() === updatedProfileData.userName.toLowerCase()) {
                 Object.assign(existingUser, {organization: updatedProfileData.organization})
                 existingUser.save();
-                res.status(201).json({ success: true, message: "Updated user profile" });
+                res.status(201).json({ success: true, upDatedProfile: existingUser, message: "Updated user profile" });
             } else {
                 User.findOne({ userName: updatedProfileData.userName }).collation({ locale: 'en', strength: 2 })
                     .then((result) => {
@@ -120,7 +140,7 @@ exports.updateUserProfile = (req, res) => {
                         if (result === null) {
                             Object.assign(existingUser, updatedProfileData)
                             existingUser.save();
-                            res.status(201).json({ success: true, message: "Updated user profile" });
+                            res.status(201).json({ success: true, upDatedProfile: existingUser, message: "Updated user profile" });
                         } else {
                             res.status(200).json({ success: false, message: "That name is taken" });
                         }
@@ -146,7 +166,7 @@ exports.updateProfileImage = (req, res) => {
 };
 
 exports.getAllUsers = (req, res) => {
-    User.find()
+    User.find().select("-password -notes -bannerImage")
         .then(async users => {
             res.status(200).json({ success: true, users: users });
         })
@@ -182,7 +202,7 @@ exports.addNote = (req, res) => {
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
-                existingUser.notes.push(note)
+                existingUser.notes.push({...note, isDeleted: false})
                 existingUser.save();
                 res.status(201).json({ success: true, message: "Note added", notes: existingUser.notes });
             } else {
@@ -194,8 +214,9 @@ exports.addNote = (req, res) => {
 exports.updateNoteById = (req, res) => {
     const userId = req.body.userId;
     const updatedNote = req.body.updatedNote;
+    console.log("NOTEEEE", updatedNote)
     User.findOneAndUpdate({ _id: userId, 'notes._id': updatedNote.noteId },
-        { $set: { "notes.$": { ...updatedNote, _id: updatedNote.noteId } } })
+        { $set: { "notes.$": { body:updatedNote.content, _id: updatedNote.noteId } } })
         .then(async note => {
             if (note !== null) {
                 res.status(200).json({ success: true, message: "note has been updated" });
@@ -218,4 +239,67 @@ exports.deleteNoteById = async (req, res) => {
         .catch(() => {
             res.status(404).json({ success: false, message: "Unable to locate note" });
         })
+};
+
+exports.createPrivateRoom = async ( roomId, reciever, recieverId, senderId, sender ) => {
+    const room = {
+        roomId,
+        reciever,
+        recieverId,
+        senderId,
+        senderId,
+        sender,
+        isPrivate: true
+    }
+  try {
+
+    User.findOne({ _id: senderId, 'privateRooms.roomId': roomId })
+    .then(async privateRoom => {
+        if(privateRoom === null) {
+            User.findOneAndUpdate(
+                    { _id: senderId },
+                    { $push: { privateRooms: room } }
+                    ).then(()=>{
+                        User.findOneAndUpdate(
+                            { _id: recieverId },
+                            { $push: { privateRooms: room } }
+                            )
+                    })
+        }
+    })
+  } catch (error) {
+    console.log("Unable to complete request", error );
+  }
+};
+
+exports.updatePrivateRoom = async ( senderId, roomId, newMessage ) => {
+  try {
+    User.findOneAndUpdate({ _id: senderId, 'privateRooms.roomId': roomId },
+        { $push: { "privateRooms.$": {messages: newMessage} } },
+        // { "upsert": true }).collation({ locale: 'en', strength: 2 }
+                ).then(async(result) => console.log(result))
+        // { $set: { "notes.$": { body:updatedNote.content, _id: updatedNote.noteId } } })
+        // .then(async note => {
+        //     if (note !== null) {
+        //         res.status(200).json({ success: true, message: "note has been updated" });
+        //     } else {
+        //         res.status(404).json({ success: false, message: "Unable to locate user" });
+        //     }
+        // })
+        // .catch(() => {
+        //     res.status(404).json({ success: false, message: "Unable to locate user" });
+        // })
+
+    // User.findOneAndUpdate(
+    //     { _id: senderId },
+    //     { $push: { privateRooms: room } },
+    //     { "upsert": true }).collation({ locale: 'en', strength: 2 }
+    //     ).then((result) => console.log(result))
+    
+    // if (privateRoom) {
+    //   return privateRoom
+    // }
+  } catch (error) {
+    console.log("Unable to complete request", error );
+  }
 };

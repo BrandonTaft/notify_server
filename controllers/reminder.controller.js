@@ -4,7 +4,7 @@ const crypto = require("crypto");
 
 exports.getAllReminders = (req, res) => {
   const userId = req.body.userId;
-  console.log(userId)
+  console.log("GETALLREMINDERS",userId)
   Reminders.findOne({ user_id: userId }).collation({ locale: 'en', strength: 2 })
     .then(async reminders => {
       console.log(reminders)
@@ -59,7 +59,7 @@ exports.addReminder = async (req, res) => {
   const userId = req.body.userId;
   const reminder = req.body.reminder;
   try {
-    const result = await Reminders.updateOne(
+    const result = await Reminders.findOneAndUpdate(
       { user_id: userId },
       // { $push: { reminders: { reminder_id: reminderId, ...reminder } } },
       { $push: { reminders: reminder } },
