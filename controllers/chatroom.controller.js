@@ -53,25 +53,6 @@ exports.getAllPrivateChatRooms = (req, res) => {
     })
 };
 
-
-
-exports.createPrivateRoom = async (  roomName, ownerId, isPrivate, password) => {
-  try {
-    const chatRoom = new ChatRoom({
-      roomName: roomName,
-      ownerId: ownerId,
-      messages: [],
-      isPrivate: isPrivate,
-    });
-    let savedChatRoom = await chatRoom.save();
-    if (savedChatRoom !== null) {
-      return savedChatRoom
-    }
-  } catch (error) {
-    console.log("Unable to complete request", error );
-  }
-};
-
 exports.findRoomById = (roomId) => {
 ChatRoom.findOne({_id: roomId})
 

@@ -18,6 +18,7 @@ const uuidv4 = require('uuid').v4;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const User = require('./models/UserModel')
 const ChatRoom = require('./models/ChatRoomModel');
 const Organization = require('./models/OrganizationModel');
 const authenticateUser = require('./authMiddleware/auth');
@@ -63,7 +64,7 @@ const orgId = crypto.randomBytes(16).toString("hex");
 socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected!`);
   socket.on("createRoom", ({ roomId, roomName, ownerId, ownerName,  isPrivate, organization }) => {
-    userController.createChatRoom(roomId, roomName, ownerId, ownerName,  isPrivate, organization)
+    chatRoomController.createChatRoom(roomId, roomName, ownerId, ownerName,  isPrivate, organization)
       .then((result) => {
         if(result) {
           ChatRoom.find({isPrivate: false}).then((allRooms) => {
@@ -76,16 +77,20 @@ socketIO.on("connection", (socket) => {
 
   socket.on("createPrivateRoom", ({ roomId, reciever, recieverId, senderId, sender }) => {
     userController.createPrivateRoom(roomId, reciever, recieverId, senderId, sender)
-      .then((result) => {
-        // if(result) {
-        //   ChatRoom.find({ $or:[ {'roomName':ownerId || roomName}, {'ownerId': roomName || ownerId} ]}).then((allRooms) => {
-        //     socketIO.emit("privateRoomList", allRooms);
-        //   })
-        // }
-         socket.join(result.roomName);
-        console.log("RESULTTTT", result)
+      .then(() => {
+         socket.join(roomId);
+         console.log(`Room ID - ${roomId} was created`)
       })
   });
+
+  socket.on("privateRoomList", (userId) => {
+    User.findOne({_id: userId})
+    .then(async existingUser => {
+      if(existingUser) {
+        socketIO.emit("foundPrivateRooms", existingUser.privateRooms);
+      }
+    })
+    });
 
   socket.on("newPrivateMessage", (data) => {
     const { senderId, sender, receiver, receieverId, roomId, message, profileImage, reactions } = data;
