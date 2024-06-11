@@ -61,6 +61,15 @@ scheduler.startCronJobScheduler();
 
 const orgId = crypto.randomBytes(16).toString("hex");
 
+socketIO.use((socket, next) => {
+  const userId = socket.handshake.auth._id;
+  if (!userId) {
+    return next(new Error("invalid user id"));
+  }
+  socket.userId = userId;
+  next();
+});
+
 socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected!`);
   socket.on("createRoom", ({ roomId, roomName, ownerId, ownerName,  isPrivate, organization }) => {
