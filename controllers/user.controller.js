@@ -252,7 +252,7 @@ exports.createPrivateRoom = async ( roomId, reciever, recieverId, senderId, send
         isPrivate: true
     }
   try {
-
+console.log("PRIVATEEEE")
     User.findOne({ _id: senderId, 'privateRooms.roomId': roomId })
     .then(async privateRoom => {
         if(privateRoom === null) {
