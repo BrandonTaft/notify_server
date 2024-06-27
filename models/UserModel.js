@@ -25,17 +25,12 @@ const UserSchema = new mongoose.Schema({
     ],
     privateRooms: [
         {
-            roomId: String,
-            date: Date,
-            recieverId: String,
-            reciever: String,
-            senderId: String,
-            sender: String,
-            isPrivate: Boolean,
+            
+            recipient: String,
             messages: [
                 {
                     messageId: String,
-                    roomId: String,
+                   fromSelf:Boolean,
                     text: String,
                     sender: String,
                     senderId: String,

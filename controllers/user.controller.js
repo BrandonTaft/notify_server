@@ -252,7 +252,6 @@ exports.createPrivateRoom = async ( roomId, reciever, recieverId, senderId, send
         isPrivate: true
     }
   try {
-console.log("PRIVATEEEE")
     User.findOne({ _id: senderId, 'privateRooms.roomId': roomId })
     .then(async privateRoom => {
         if(privateRoom === null) {
@@ -272,12 +271,20 @@ console.log("PRIVATEEEE")
   }
 };
 
-exports.updatePrivateRoom = async ( senderId, roomId, newMessage ) => {
+exports.updatePrivateRoom = async ( newPrivateMessage ) => {
+    //console.log("NEWPRIVATEMESSAGE", newPrivateMessage)
   try {
-    User.findOneAndUpdate({ _id: senderId, 'privateRooms.roomId': roomId },
-        { $push: { "privateRooms.$": {messages: newMessage} } },
+    if(newPrivateMessage.fromSelf){
+    User.findOneAndUpdate({ _id: newPrivateMessage.senderId, 'privateRooms.recipient': newPrivateMessage.receiverId },
+        { $push: { "privateRooms.$": {messages: newPrivateMessage} } },
         // { "upsert": true }).collation({ locale: 'en', strength: 2 }
                 ).then(async(result) => console.log(result))
+            } else if(!newPrivateMessage.fromSelf){
+                User.findOneAndUpdate({ _id: senderId, 'privateRooms.recipient': newPrivateMessage.senderId },
+                    { $push: { "privateRooms.$": {messages: newPrivateMessage} } },
+                    // { "upsert": true }).collation({ locale: 'en', strength: 2 }
+                            ).then(async(result) => console.log(result))
+                        }
         // { $set: { "notes.$": { body:updatedNote.content, _id: updatedNote.noteId } } })
         // .then(async note => {
         //     if (note !== null) {

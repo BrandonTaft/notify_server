@@ -83,12 +83,23 @@ socketIO.on("connection", (socket) => {
   
   console.log("ADDED a user")
   for (let [id, socket] of socketIO.of("/").sockets) {
-     if (!activeUsers.some(user => user.userID === id)) {
-    activeUsers.push({
-      userID: id,
-      user: socket.user,
-    });
-  }
+  //    if (!activeUsers.some(user => user.user._id === socket.user._id)) {
+  //   activeUsers.push({
+  //     userID: id,
+  //     user: socket.user,
+  //   });
+  // } else {
+
+//  }
+let existingActiveUser = activeUsers.find(user => user.user._id === socket.user._id)
+if(existingActiveUser) {
+  existingActiveUser.userID = id
+} else {
+  activeUsers.push({
+        userID: id,
+        user: socket.user,
+      });
+}
   }
   // socket.emit("users", activeUsers);
   // console.log("USERS", activeUsers)
@@ -98,34 +109,27 @@ socketIO.on("connection", (socket) => {
     userName: socket.user.userName,
   });
 
-  socket.on('findPrivateRoom', function(userId) {
-    let room = activeUsers.find((user) => user.user._id === userId)
-    console.log()
-    socket.join(room.roomID);
-});
+//   socket.on('findPrivateRoom', function(userId) {
+//     let room = activeUsers.find((user) => user.user._id === userId)
+//     console.log()
+//     socket.join(room.roomID);
+// });
 
-  socket.on("newPrivateMessage",async ({ newMessage, to }) => {
-    const { messageId, text, fromSelf, receiverId, sender, senderId,profileImage, time, reactions } = newMessage;
-    const newPrivateMessage = {
-      messageId,
-      text,
-      fromSelf,
-      receiverId,
-      sender,
-      senderId,
-      profileImage,
-      time,
-      reactions
-    };
-  // //   userController.updatePrivateRoom(senderId, roomId, newPrivateMessage)
-     let recipient = await activeUsers.find((user) => user.user._id === to)
-     console.log("RECCCCCC",  to, recipient, activeUsers)
-    socket.to(recipient.userID).emit("newPrivateMessage", {
-      newPrivateMessage: newPrivateMessage,
-      from: senderId,
+  socket.on("newPrivateMessage",async ({ newPrivateMessage }) => {
+    console.log("TESST", {
+      ...newPrivateMessage, fromSelf:false
+  })
+     let recipient = await activeUsers.find((user) => user.user._id === newPrivateMessage.receiverId)
+     console.log("RECCCCCC",   activeUsers)
+    let x = {
+      ...newPrivateMessage, fromSelf:false
+  }
+     socket.to(recipient.userID).emit("newPrivateMessage", {
+      newPrivateMessage : {
+        ...newPrivateMessage, fromSelf:false
     }
-  );
- 
+  });
+  userController.updatePrivateRoom(newPrivateMessage)
    // console.log(newMessage, to)
   });
 
