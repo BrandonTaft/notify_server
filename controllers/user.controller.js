@@ -128,7 +128,6 @@ exports.updateUserProfile = (req, res) => {
     let updatedProfileData = req.body.updatedProfileData
     User.findOne({ _id: userId })
         .then(async existingUser => {
-            console.log("IRANN", existingUser.userName.toLowerCase(),updatedProfileData.userName.toLowerCase() )
             if (existingUser.userName.toLowerCase() === updatedProfileData.userName.toLowerCase()) {
                 Object.assign(existingUser, {organization: updatedProfileData.organization})
                 existingUser.save();
@@ -136,7 +135,6 @@ exports.updateUserProfile = (req, res) => {
             } else {
                 User.findOne({ userName: updatedProfileData.userName }).collation({ locale: 'en', strength: 2 })
                     .then((result) => {
-                        
                         if (result === null) {
                             Object.assign(existingUser, updatedProfileData)
                             existingUser.save();
@@ -271,20 +269,32 @@ exports.createPrivateRoom = async ( roomId, reciever, recieverId, senderId, send
   }
 };
 
-exports.updatePrivateRoom = async ( newPrivateMessage ) => {
-    //console.log("NEWPRIVATEMESSAGE", newPrivateMessage)
+exports.updatePrivateRoom = async ( req, res ) => {
+    const userId = req.body.userId;
+    const otherPartyId = req.body.otherPartyId;
+    const message = req.body.message
   try {
-    if(newPrivateMessage.fromSelf){
-    User.findOneAndUpdate({ _id: newPrivateMessage.senderId, 'privateRooms.recipient': newPrivateMessage.receiverId },
-        { $push: { "privateRooms.$": {messages: newPrivateMessage} } },
-        // { "upsert": true }).collation({ locale: 'en', strength: 2 }
-                ).then(async(result) => console.log(result))
-            } else if(!newPrivateMessage.fromSelf){
-                User.findOneAndUpdate({ _id: senderId, 'privateRooms.recipient': newPrivateMessage.senderId },
-                    { $push: { "privateRooms.$": {messages: newPrivateMessage} } },
-                    // { "upsert": true }).collation({ locale: 'en', strength: 2 }
-                            ).then(async(result) => console.log(result))
-                        }
+    User.findOne({ _id: userId })
+        .then(async(user) => {
+            if(user) {
+                existingRoom = user.privateRooms.find(room => room.recipient === otherPartyId)
+                if(existingRoom){
+                    existingRoom.messages.push(message)
+                    user.save();
+                    console.log("UPDATEEE", user)
+                } else {
+                    user.privateRooms.push({recipient: otherPartyId, messages: [message]})
+                    user.save();
+                    console.log("UPDATEEE", user)
+                }
+            }
+        })
+            // } else if(!newPrivateMessage.fromSelf){
+            //     User.findOneAndUpdate({ _id: senderId, 'privateRooms.recipient': newPrivateMessage.senderId },
+            //         { $push: { "privateRooms.$": {messages: newPrivateMessage} } },
+            //         // { "upsert": true }).collation({ locale: 'en', strength: 2 }
+            //                 ).then(async(result) => console.log(result))
+            //             }
         // { $set: { "notes.$": { body:updatedNote.content, _id: updatedNote.noteId } } })
         // .then(async note => {
         //     if (note !== null) {

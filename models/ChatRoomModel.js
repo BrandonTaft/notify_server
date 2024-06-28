@@ -12,7 +12,7 @@ const ChatRoomSchema = new mongoose.Schema({
             messageId: String,
             roomId: String,
             text: String,
-            user: String,
+            sender: String,
             userId: String,
             profileImage: String,
             time: String,

@@ -75,62 +75,45 @@ socketIO.use(async (socket, next) => {
     socket.user = socket.handshake.auth.user;
     next();
   } catch (error) {
-    console.log(token,error)
+    console.log(token, error)
   }
 });
-const activeUsers = [];
-socketIO.on("connection", (socket) => {
-  
-  console.log("ADDED a user")
-  for (let [id, socket] of socketIO.of("/").sockets) {
-  //    if (!activeUsers.some(user => user.user._id === socket.user._id)) {
-  //   activeUsers.push({
-  //     userID: id,
-  //     user: socket.user,
-  //   });
-  // } else {
 
-//  }
-let existingActiveUser = activeUsers.find(user => user.user._id === socket.user._id)
-if(existingActiveUser) {
-  existingActiveUser.userID = id
-} else {
-  activeUsers.push({
+const activeUsers = [];
+
+socketIO.on("connection", (socket) => {
+
+  for (let [id, socket] of socketIO.of("/").sockets) {
+    let existingActiveUser = activeUsers.find(user => user.user._id === socket.user._id)
+    if (existingActiveUser) {
+      existingActiveUser.userID = id
+    } else {
+      activeUsers.push({
         userID: id,
         user: socket.user,
       });
-}
+    }
   }
   // socket.emit("users", activeUsers);
-  // console.log("USERS", activeUsers)
+  console.log("ActiveUSERS", activeUsers)
 
   socket.broadcast.emit("user connected", {
     userID: socket.id,
     userName: socket.user.userName,
   });
 
-//   socket.on('findPrivateRoom', function(userId) {
-//     let room = activeUsers.find((user) => user.user._id === userId)
-//     console.log()
-//     socket.join(room.roomID);
-// });
 
-  socket.on("newPrivateMessage",async ({ newPrivateMessage }) => {
-    console.log("TESST", {
-      ...newPrivateMessage, fromSelf:false
-  })
-     let recipient = await activeUsers.find((user) => user.user._id === newPrivateMessage.receiverId)
-     console.log("RECCCCCC",   activeUsers)
-    let x = {
-      ...newPrivateMessage, fromSelf:false
+  socket.on("newPrivateMessage", async ({ newPrivateMessage }) => {
+    
+    let recipient = await activeUsers.find((user) => user.user._id === newPrivateMessage.receiverId)
+    console.log("RECIPEINT",recipient)
+    if(recipient) {
+    socket.to(recipient.userID).emit("newPrivateMessage", {
+      newPrivateMessage: {
+        ...newPrivateMessage, fromSelf: false
+      }
+    });
   }
-     socket.to(recipient.userID).emit("newPrivateMessage", {
-      newPrivateMessage : {
-        ...newPrivateMessage, fromSelf:false
-    }
-  });
-  userController.updatePrivateRoom(newPrivateMessage)
-   // console.log(newMessage, to)
   });
 
   socket.on("createRoom", ({ roomId, roomName, ownerId, ownerName, isPrivate, organization }) => {
@@ -202,189 +185,9 @@ if(existingActiveUser) {
 
 
 
-
-
-
-
-
-// const private = socketIO.of("/private");
-// private.use((socket, next) => {
-//   const token = socket.handshake.auth.token;
-
-//   try {
-//     jwt.verify(token, process.env.JWT_SECRET_KEY);
-//     socket.user = socket.handshake.auth.user;
-//     next();
-//   } catch (error) {
-//     console.log(error)
-//   }
-
-// });
-
-
-// private.on("connection", (socket) => {
-//   console.log(`⚡: ${socket.user._id} user just connected to a private room!`);
-
-//   const users = [];
-//   for (let [id, socket] of private.sockets) {
-//     users.push({
-//       userID: id,
-//       username: socket.user._id,
-//     });
-//   }
-//   socket.emit("users", users);
-//   console.log("USERS", users)
-
-//   socket.broadcast.emit("user connected", {
-//     userID: socket.id,
-//     username: socket.username,
-//   });
-
-//   socket.on("newPrivateMessage", ({ newMessage, to }) => {
-//     const { senderId, sender, receiver, receiverId, roomId, message, profileImage, timestamp, reactions } = newMessage;
-//     const messageId = crypto.randomBytes(16).toString("hex");
-//     const newPrivateMessage = {
-//       messageId,
-//       roomId,
-//       text: message,
-//       sender,
-//       senderId,
-//       receiver,
-//       receiverId,
-//       profileImage,
-//       time: `${timestamp.hour}:${timestamp.mins}`,
-//       reactions
-//     };
-//     userController.updatePrivateRoom(senderId, roomId, newPrivateMessage)
-//     let recipient = users.find((user) => user.userID === to)
-//     console.log("RECCCCCC", recipient, users)
-//     socket.to(recipient.userID).emit("newPrivateMessage", {
-//       newPrivateMessage,
-//       from: socket.id,
-//     });
-//     // ChatRoom.findOne({ roomId: roomId })
-//     // .then(async existingChatRoom => {
-//     //   if (existingChatRoom) {
-//     //     existingChatRoom.messages.push(newMessage)
-//     //        await existingChatRoom.save();
-//     //           socketIO.emit("newMessage",existingChatRoom.messages);
-//     //   }
-//     //   ChatRoom.find({isPrivate: false}).then((allRooms) => {
-//     //     console.log("ALLROOMS",allRooms)
-//     //     socketIO.emit("chatRoomList", allRooms);
-//     //   })
-//     // })
-//   });
-
-
-//   socket.on("createPrivateRoom", ({ roomId, reciever, recieverId, senderId, sender }) => {
-//     userController.createPrivateRoom(roomId, reciever, recieverId, senderId, sender)
-//       .then(() => {
-//         socket.join(roomId);
-//         console.log(`Room ID - ${roomId} was created`)
-//       })
-//   });
-
-//   // socket.on("privateRoomList", (userId) => {
-//   //   User.findOne({_id: userId})
-//   //   .then(async existingUser => {
-//   //     if(existingUser) {
-//   //       private.emit("foundPrivateRooms", existingUser.privateRooms);
-//   //     }
-//   //   })
-//   //   });
-
-//   // socket.on("newPrivateMessage", ({newMessage, to}) => {
-//   //   const { senderId, sender, receiver, receiverId, roomId, message, profileImage, timestamp, reactions } = newMessage;
-//   //   const messageId = crypto.randomBytes(16).toString("hex");
-//   //   const newPrivateMessage = {
-//   //     messageId,
-//   //     roomId,
-//   //     text: message,
-//   //     sender,
-//   //     senderId,
-//   //     receiver,
-//   //     receiverId,
-//   //     profileImage,
-//   //     time: `${timestamp.hour}:${timestamp.mins}`,
-//   //     reactions
-//   //   };
-//   //   userController.updatePrivateRoom(senderId, roomId, newPrivateMessage)
-//   //   socket.to(to).emit("newPrivateMessage", {
-//   //     newPrivateMessage,
-//   //     from: socket.id,
-//   //   });
-//   //   // ChatRoom.findOne({ roomId: roomId })
-//   //   // .then(async existingChatRoom => {
-//   //   //   if (existingChatRoom) {
-//   //   //     existingChatRoom.messages.push(newMessage)
-//   //   //        await existingChatRoom.save();
-//   //   //           socketIO.emit("newMessage",existingChatRoom.messages);
-//   //   //   }
-//   //   //   ChatRoom.find({isPrivate: false}).then((allRooms) => {
-//   //   //     console.log("ALLROOMS",allRooms)
-//   //   //     socketIO.emit("chatRoomList", allRooms);
-//   //   //   })
-//   //   // })
-//   // });
-
-
-//   // socket.on("findRoom", (roomId) => {
-//   // ChatRoom.findOne({roomId: roomId})
-//   // .then(async existingRoom => {
-//   //   if(existingRoom) {
-//   //     private.emit("foundRoom", existingRoom.messages);
-//   //   }
-//   // })
-//   // });
-
-//   // socket.on("newMessage", (data) => {
-//   //   const { roomId, message, user, userId, profileImage, organization, reactions, timestamp } = data;
-//   //   const messageId = crypto.randomBytes(16).toString("hex");
-//   //   const newMessage = {
-//   //     messageId,
-//   //     roomId,
-//   //     text: message,
-//   //     user,
-//   //     userId,
-//   //     profileImage,
-//   //     time: `${timestamp.hour}:${timestamp.mins}`,
-//   //     reactions
-//   //   };
-//   //   ChatRoom.findOne({ roomId: roomId })
-//   //   .then(async existingChatRoom => {
-//   //     if (existingChatRoom) {
-//   //       existingChatRoom.messages.push(newMessage)
-//   //          await existingChatRoom.save();
-//   //             private.emit("newMessage",existingChatRoom.messages);
-//   //     }
-//   //     ChatRoom.find({isPrivate: false}).then((allRooms) => {
-//   //       console.log("ALLROOMS",allRooms)
-//   //       private.emit("chatRoomList", allRooms);
-//   //     })
-//   //   })
-//   // });
-
-//   socket.on("newReaction", (data) => {
-//     let { roomId, messageId, reaction } = data;
-//     ChatRoom.findOneAndUpdate({ roomId: roomId, 'messages.messageId': messageId },
-//       { $inc: { [`messages.$.reactions.${reaction}`]: 1 } }, { new: true },)
-//       .then(async result => {
-//         let message = result.messages.filter((message) => message.messageId === messageId)
-//         private.emit("newReaction", message[0]);
-//       })
-//   });
-
-//   socket.on("disconnect", () => {
-//     socket.disconnect();
-//     console.log("🔥: A user disconnected");
-//   });
-// });
-
-
 app.get("/api/chatrooms", chatRoomController.getAllChatRooms);
 
-app.post("/api/private-chatrooms", authenticateUser, chatRoomController.getAllPrivateChatRooms);
+app.post("/api/updateprivateroom", authenticateUser, userController.updatePrivateRoom);
 
 //******Catch 404 Errors And Forward To Error Handler*****//
 app.use(function (req, res, next) {
