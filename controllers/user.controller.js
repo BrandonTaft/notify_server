@@ -272,18 +272,19 @@ exports.createPrivateRoom = async ( roomId, reciever, recieverId, senderId, send
 exports.updatePrivateRoom = async ( req, res ) => {
     const userId = req.body.userId;
     const otherPartyId = req.body.otherPartyId;
+    const otherPartyName = req.body.otherPartyName
     const message = req.body.message
   try {
     User.findOne({ _id: userId })
         .then(async(user) => {
             if(user) {
-                existingRoom = user.privateRooms.find(room => room.recipient === otherPartyId)
+                existingRoom = user.privateRooms.find(room => room.recipientId === otherPartyId)
                 if(existingRoom){
                     existingRoom.messages.push(message)
                     user.save();
                     console.log("UPDATEEE", user)
                 } else {
-                    user.privateRooms.push({recipient: otherPartyId, messages: [message]})
+                    user.privateRooms.push({recipientId: otherPartyId, recipientName: otherPartyName, messages: [message]})
                     user.save();
                     console.log("UPDATEEE", user)
                 }

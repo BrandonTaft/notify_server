@@ -26,7 +26,8 @@ const UserSchema = new mongoose.Schema({
     privateRooms: [
         {
             
-            recipient: String,
+            recipientId: String,
+            recipientName: String,
             messages: [
                 {
                     messageId: String,
