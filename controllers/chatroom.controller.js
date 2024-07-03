@@ -59,7 +59,7 @@ ChatRoom.findOne({_id: roomId})
 };
 
 exports.addMessage = (data) => {
-  const { roomId, message, sender, userId, profileImage, organization, reactions, timestamp } = data;
+  const { roomId, message, user, userId, profileImage, organization, reactions, timestamp } = data;
   const messageId = crypto.randomBytes(16).toString("hex");
   ChatRoom.findOne({ _id: roomId })
       .then(async existingChatRoom => {
@@ -67,7 +67,7 @@ exports.addMessage = (data) => {
           messageId,
           roomId,
           text: message,
-          sender,
+          user,
           userId,
           profileImage,
           time: `${timestamp.hour}:${timestamp.mins}`,

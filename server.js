@@ -113,6 +113,20 @@ socketIO.on("connection", (socket) => {
         ...newPrivateMessage, fromSelf: false
       }
     });
+  } else {
+    User.findOne({ _id: receiverId })
+    .then(async(user) => {
+      if(user) {
+          existingRoom = user.privateRooms.find(room => room.recipientId === otherPartyId)
+          if(existingRoom){
+              existingRoom.messages.push(message)
+              user.save();
+          } else {
+              user.privateRooms.push({recipientId: otherPartyId, recipientName: otherPartyName, messages: [message]})
+              user.save();
+          }
+      }
+  })
   }
   });
 
@@ -163,7 +177,7 @@ socketIO.on("connection", (socket) => {
         })
       })
   });
-
+  
   socket.on("newReaction", (data) => {
     let { roomId, messageId, reaction } = data;
     ChatRoom.findOneAndUpdate({ roomId: roomId, 'messages.messageId': messageId },

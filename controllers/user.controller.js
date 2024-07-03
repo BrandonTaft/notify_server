@@ -97,7 +97,7 @@ exports.refreshUser = (req, res) => {
 };
 
 exports.logOutUser = (req, res) => {
-    const { userId } = req.body.user;
+    const  userId  = req.body.userId;
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
@@ -290,33 +290,6 @@ exports.updatePrivateRoom = async ( req, res ) => {
                 }
             }
         })
-            // } else if(!newPrivateMessage.fromSelf){
-            //     User.findOneAndUpdate({ _id: senderId, 'privateRooms.recipient': newPrivateMessage.senderId },
-            //         { $push: { "privateRooms.$": {messages: newPrivateMessage} } },
-            //         // { "upsert": true }).collation({ locale: 'en', strength: 2 }
-            //                 ).then(async(result) => console.log(result))
-            //             }
-        // { $set: { "notes.$": { body:updatedNote.content, _id: updatedNote.noteId } } })
-        // .then(async note => {
-        //     if (note !== null) {
-        //         res.status(200).json({ success: true, message: "note has been updated" });
-        //     } else {
-        //         res.status(404).json({ success: false, message: "Unable to locate user" });
-        //     }
-        // })
-        // .catch(() => {
-        //     res.status(404).json({ success: false, message: "Unable to locate user" });
-        // })
-
-    // User.findOneAndUpdate(
-    //     { _id: senderId },
-    //     { $push: { privateRooms: room } },
-    //     { "upsert": true }).collation({ locale: 'en', strength: 2 }
-    //     ).then((result) => console.log(result))
-    
-    // if (privateRoom) {
-    //   return privateRoom
-    // }
   } catch (error) {
     console.log("Unable to complete request", error );
   }
