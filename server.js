@@ -94,14 +94,20 @@ socketIO.on("connection", (socket) => {
       });
     }
   }
-  // socket.emit("users", activeUsers);
+  
   console.log("ActiveUSERS", activeUsers)
 
+  socket.on("user connected", () => {
   socket.broadcast.emit("user connected", {
     userID: socket.id,
     userName: socket.user.userName,
-  });
+  })
+});
 
+socket.on("logout", (userId) => {
+  activeUsers.filter((user) => user.userID === socket.id)
+  socket.broadcast.emit("user disconnected", userId)
+})
 
   socket.on("newPrivateMessage", async ({ newPrivateMessage }) => {
     
@@ -188,12 +194,9 @@ socketIO.on("connection", (socket) => {
       })
   });
 
-
-
   socket.on("disconnect", () => {
-    socket.disconnect();
     activeUsers.filter((user) => user.userID === socket.id)
-    console.log("USERSSS LEFT", activeUsers)
+    socket.broadcast.emit("user disconnected", socket.auth.userName)
   });
 });
 
