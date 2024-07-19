@@ -35,8 +35,8 @@ const UserSchema = new mongoose.Schema({
                     text: String,
                     sender: String,
                     senderId: String,
-                    reciever: String,
-                    recieverId: String,
+                    receiver: String,
+                    receiverId: String,
                     profileImage: String,
                     time: String,
                     reactions: Object

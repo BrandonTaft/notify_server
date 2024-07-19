@@ -30,7 +30,7 @@ router.post("/register", controller.registerUser)
 
 router.post("/login", controller.logInUser);
 
-router.post("/refresh", authenticateUser, controller.refreshUser);
+router.post("/refresh", controller.refreshUser);
 
 router.post('/logout', controller.logOutUser);
 

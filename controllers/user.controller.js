@@ -78,6 +78,7 @@ exports.logInUser = (req, res) => {
 };
 
 exports.refreshUser = (req, res) => {
+    console.log("REFREXH IN USERCONTROLLER")
     const  userId  = req.body.userId;
     console.log(userId)
     User.findOne({ _id: userId })
@@ -239,42 +240,13 @@ exports.deleteNoteById = async (req, res) => {
         })
 };
 
-exports.createPrivateRoom = async ( roomId, reciever, recieverId, senderId, sender ) => {
-    const room = {
-        roomId,
-        reciever,
-        recieverId,
-        senderId,
-        senderId,
-        sender,
-        isPrivate: true
-    }
-  try {
-    User.findOne({ _id: senderId, 'privateRooms.roomId': roomId })
-    .then(async privateRoom => {
-        if(privateRoom === null) {
-            User.findOneAndUpdate(
-                    { _id: senderId },
-                    { $push: { privateRooms: room } }
-                    ).then(()=>{
-                        User.findOneAndUpdate(
-                            { _id: recieverId },
-                            { $push: { privateRooms: room } }
-                            )
-                    })
-        }
-    })
-  } catch (error) {
-    console.log("Unable to complete request", error );
-  }
-};
-
 exports.updatePrivateRoom = async ( req, res ) => {
     const userId = req.body.userId;
     const otherPartyId = req.body.otherPartyId;
     const otherPartyName = req.body.otherPartyName
     const message = req.body.message
-  try {
+    console.log("TESSSSSST", userId, otherPartyId, otherPartyName, message)  
+    try {
     User.findOne({ _id: userId })
         .then(async(user) => {
             if(user) {
@@ -285,6 +257,52 @@ exports.updatePrivateRoom = async ( req, res ) => {
                     console.log("UPDATEEE", user)
                 } else {
                     user.privateRooms.push({recipientId: otherPartyId, recipientName: otherPartyName, messages: [message]})
+                    user.save();
+                    console.log("UPDATEEE", user)
+                }
+            }
+        })
+  } catch (error) {
+    console.log("Unable to complete request", error );
+  }
+};
+
+exports.updateReceiversPrivateRooms = async ( newPrivateMessage ) => {
+    const { receiverId, senderId, sender } = newPrivateMessage
+    try {
+    User.findOne({ _id: receiverId })
+        .then(async(user) => {
+            if(user) {
+                existingRoom = user.privateRooms.find(room => room.recipientId === senderId)
+                if(existingRoom){
+                    existingRoom.messages.push(newPrivateMessage)
+                    user.save();
+                    console.log("UPDATEEE", user)
+                } else {
+                    user.privateRooms.push({recipientId: senderId, recipientName: sender, messages: [newPrivateMessage]})
+                    user.save();
+                    console.log("UPDATEEE", user)
+                }
+            }
+        })
+  } catch (error) {
+    console.log("Unable to complete request", error );
+  }
+};
+
+exports.updateSendersPrivateRooms = async ( newPrivateMessage ) => {
+    const { receiverId, senderId, receiver } = newPrivateMessage
+    try {
+    User.findOne({ _id: senderId })
+        .then(async(user) => {
+            if(user) {
+                existingRoom = user.privateRooms.find(room => room.recipientId === receiverId)
+                if(existingRoom){
+                    existingRoom.messages.push(newPrivateMessage)
+                    user.save();
+                    console.log("UPDATEEE", user)
+                } else {
+                    user.privateRooms.push({recipientId: receiverId, recipientName: receiver, messages: [newPrivateMessage]})
                     user.save();
                     console.log("UPDATEEE", user)
                 }

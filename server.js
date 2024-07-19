@@ -24,9 +24,14 @@ const Organization = require('./models/OrganizationModel');
 const authenticateUser = require('./authMiddleware/auth');
 const { rmSync } = require('fs');
 require('dotenv').config();
+
+const { InMemorySessionStore } = require("./sessionStore");
+const sessionStore = new InMemorySessionStore();
+
+
 const socketIO = require('socket.io')(http, {
   cors: {
-    origin: "<http://192.168.1.26:8081>"
+    origin: "http://192.168.1.26:8081"
   }
 });
 
@@ -60,80 +65,162 @@ app.use((_, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 scheduler.startCronJobScheduler();
 
-const orgId = crypto.randomBytes(16).toString("hex");
+const randomId = () => crypto.randomBytes(8).toString("hex");
+
+// io.use((socket, next) => {
+//   const username = socket.handshake.auth.username;
+//   if (!username) {
+//     return next(new Error("invalid username"));
+//   }
+//   socket.username = username;
+//   next();
+// });
+
+
+// io.on("connection", (socket) => {
+//   const users = [];
+//   for (let [id, socket] of io.of("/").sockets) {
+//     users.push({
+//       userID: id,
+//       username: socket.username,
+//     });
+//   }
+//   socket.emit("users", users);
+
+//   socket.broadcast.emit("user connected", {
+//     userID: socket.id,
+//     username: socket.username,
+//   });
 
 
 
-
+// socket.on("private message", ({ content, to }) => {
+//   console.log("SENDING PRIVETE MESSAE", content, to)
+//   // socket.to(to).emit("private message", {
+//   //   content,
+//   //   from: socket.id,
+//   // });
+// });
+// });
 socketIO.use(async (socket, next) => {
+console.log("SOMEONE IS TRYING")
+  const sessionID = socket.handshake.auth.sessionID;
   const token = socket.handshake.auth.token;
+  console.log("SESSION: ", sessionID, "TOKEN: ", token)
   if (!token) {
     return next(new Error("invalid user id"));
   }
   try {
     jwt.verify(token, process.env.JWT_SECRET_KEY);
-    socket.user = socket.handshake.auth.user;
+    if (sessionID) {
+      const session = sessionStore.findSession(sessionID);
+      console.log("SESSION FOUND :", session)
+      if (session) {
+        console.log("THIS IS OUR SESSION", session)
+        socket.sessionID = sessionID;
+        socket.userID = session.userID;
+        socket.username = session.username;
+        return next();
+      }
+    }
+    const username = socket.handshake.auth.username;
+    if (!username) {
+      return next(new Error("invalid username"));
+    }
+    socket.sessionID = randomId();
+    socket.userID = socket.handshake.auth.userID;
+    socket.username = username
+    console.log("USER NAME :", username)
     next();
   } catch (error) {
     console.log(token, error)
   }
 });
 
-const activeUsers = [];
+
 
 socketIO.on("connection", (socket) => {
+console.log("SOMEONE CONNECTED")
+  socket.emit("session", {
+    sessionID: socket.sessionID,
+    userID: socket.userID,
+  });
 
+  socket.join(socket.userID);
+
+  let activeUsers = [];
   for (let [id, socket] of socketIO.of("/").sockets) {
-    let existingActiveUser = activeUsers.find(user => user.user._id === socket.user._id)
+    let existingActiveUser = activeUsers.find(user => user.userID === socket.userID)
     if (existingActiveUser) {
       existingActiveUser.userID = id
     } else {
       activeUsers.push({
-        userID: id,
-        user: socket.user,
+        userID: socket.userID,
+        username: socket.username
       });
     }
   }
-  
+  socket.emit("users", activeUsers);
+  //tells all clients except the socket itself, to refresh list
+  socket.broadcast.emit("user logged in", {
+    userID: socket.id,
+    userName: socket.username,
+  })
+
+  //refresh list on client if user logs out/in but never disco'd from server
+  socket.on("user logged in", () => {
+    socket.broadcast.emit("user logged in", {
+      userID: socket.id,
+      userName: socket.username,
+    })
+  });
+
+  //refresh list on client if user logs out/in but never disco'd from server
+  socket.on("user logged out", async (userId) => {
+    activeUsers = activeUsers.filter((user) => user.userID !== userId)
+    socket.broadcast.emit("user logged out", userId)
+    console.log("ACTIVE USERS", userId, activeUsers)
+  })
+
   console.log("ActiveUSERS", activeUsers)
 
-  socket.on("user connected", () => {
-  socket.broadcast.emit("user connected", {
-    userID: socket.id,
-    userName: socket.user.userName,
-  })
-});
-
-socket.on("logout", (userId) => {
-  activeUsers.filter((user) => user.userID === socket.id)
-  socket.broadcast.emit("user disconnected", userId)
-})
-
   socket.on("newPrivateMessage", async ({ newPrivateMessage }) => {
-    
-    let recipient = await activeUsers.find((user) => user.user._id === newPrivateMessage.receiverId)
-    console.log("RECIPEINT",recipient)
-    if(recipient) {
-    socket.to(recipient.userID).emit("newPrivateMessage", {
+
+
+    socket.to(newPrivateMessage.receiverId).to(socket.userID).emit("newPrivateMessage", {
       newPrivateMessage: {
         ...newPrivateMessage, fromSelf: false
       }
     });
-  } else {
-    User.findOne({ _id: receiverId })
-    .then(async(user) => {
-      if(user) {
-          existingRoom = user.privateRooms.find(room => room.recipientId === otherPartyId)
-          if(existingRoom){
-              existingRoom.messages.push(message)
-              user.save();
-          } else {
-              user.privateRooms.push({recipientId: otherPartyId, recipientName: otherPartyName, messages: [message]})
-              user.save();
-          }
+
+    socket.on("disconnect", async () => {
+      const matchingSockets = await io.in(socket.userID).allSockets();
+      const isDisconnected = matchingSockets.size === 0;
+      if (isDisconnected) {
+        // notify other users
+        socket.broadcast.emit("user disconnected", socket.userID);
+        // update the connection status of the session
+        sessionStore.saveSession(socket.sessionID, {
+          userID: socket.userID,
+          username: socket.username,
+          connected: false,
+        });
       }
-  })
-  }
+    });
+
+
+    //  let recipient = activeUsers.find((user) => user.user === newPrivateMessage.receiverId)
+    //  console.log("IDDDD", newPrivateMessage.receiverId, activeUsers.find(({user}) => user === newPrivateMessage.receiverId))
+    //   if (recipient) {
+    //     console.log("REC", recipient)
+    //     socket.to(recipient.userID).emit("newPrivateMessage", {
+    //       newPrivateMessage: {
+    //         ...newPrivateMessage, fromSelf: false
+    //       }
+    //     });
+    //   } 
+    userController.updateReceiversPrivateRooms(newPrivateMessage)
+    userController.updateSendersPrivateRooms(newPrivateMessage)
   });
 
   socket.on("createRoom", ({ roomId, roomName, ownerId, ownerName, isPrivate, organization }) => {
@@ -183,7 +270,7 @@ socket.on("logout", (userId) => {
         })
       })
   });
-  
+
   socket.on("newReaction", (data) => {
     let { roomId, messageId, reaction } = data;
     ChatRoom.findOneAndUpdate({ roomId: roomId, 'messages.messageId': messageId },
@@ -195,8 +282,8 @@ socket.on("logout", (userId) => {
   });
 
   socket.on("disconnect", () => {
-    activeUsers.filter((user) => user.userID === socket.id)
-    socket.broadcast.emit("user disconnected", socket.auth.userName)
+    activeUsers = activeUsers.filter((user) => user.userID !== socket.userID)
+    socket.broadcast.emit("user disconnected", socket.username)
   });
 });
 
