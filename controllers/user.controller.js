@@ -99,6 +99,7 @@ exports.refreshUser = (req, res) => {
 
 exports.logOutUser = (req, res) => {
     const  userId  = req.body.userId;
+    console.log(userId , "is logged out")
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {

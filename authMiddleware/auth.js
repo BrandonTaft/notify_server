@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 
 function authenticateUser(req, res, next) {
 const headers = req.header('Authorization');
+console.log("AUTH HEADERS", headers)
 if(!headers) {
     return res.status(401).json({success: false, message: 'Unable to authenticate user'})
 };
