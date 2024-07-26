@@ -78,12 +78,12 @@ exports.logInUser = (req, res) => {
 };
 
 exports.refreshUser = (req, res) => {
-    console.log("REFREXH IN USERCONTROLLER")
-    const  userId  = req.body.userId;
-    console.log(userId)
+    console.log("REFREXH IN USERCONTROLLER", res.locals.authenticated)
+    const  userId  = res.locals.authenticated;
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
+                console.log("EXISTING USER", existingUser)
                 res.status(201).json({
                     success: true,
                     existingUser,
@@ -97,8 +97,28 @@ exports.refreshUser = (req, res) => {
         })
 };
 
+exports.connectUser = (userId) => {
+    User.findOne({ _id: userId })
+        .then(async existingUser => {
+            if (!existingUser.isLoggedIn) {
+                existingUser.isLoggedIn = true;
+                existingUser.save();
+            }
+        })
+}
+
+exports.disconnectUser = (userId) => {
+    User.findOne({ _id: userId })
+        .then(async existingUser => {
+            if (existingUser.isLoggedIn) {
+                existingUser.isLoggedIn = false;
+                existingUser.save(); 
+            }
+        })
+}
+
 exports.logOutUser = (req, res) => {
-    const  userId  = req.body.userId;
+    const  userId  = res.locals.authenticated;
     console.log(userId , "is logged out")
     User.findOne({ _id: userId })
         .then(async existingUser => {
@@ -113,7 +133,7 @@ exports.logOutUser = (req, res) => {
 };
 
 exports.deleteUser = (req, res) => {
-    const { userId } = req.body.user;
+    const  userId  = res.locals.authenticated;
     User.deleteOne({ _id: userId })
         .then((result) => {
             if(result.deletedCount === 1) {
@@ -123,6 +143,20 @@ exports.deleteUser = (req, res) => {
             }
         })
 };
+
+exports.getAllUsers = (req, res) => {
+    User.find().select("-password -notes -bannerImage")
+        .then(async users => {
+            res.status(200).json({ success: true, users: users });
+        })
+        .catch(() => {
+            res.status(404).json({ success: false, message: "Unable to load users" });
+        })
+};
+
+
+
+
 
 
 exports.updateUserProfile = (req, res) => {
@@ -165,15 +199,7 @@ exports.updateProfileImage = (req, res) => {
         })
 };
 
-exports.getAllUsers = (req, res) => {
-    User.find().select("-password -notes -bannerImage")
-        .then(async users => {
-            res.status(200).json({ success: true, users: users });
-        })
-        .catch(() => {
-            res.status(404).json({ success: false, message: "Unable to load users" });
-        })
-};
+
 
 exports.getAllLoggedInUsers = (req, res) => {
     User.find({ isLoggedIn: true })

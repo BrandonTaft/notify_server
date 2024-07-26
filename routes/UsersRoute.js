@@ -22,19 +22,29 @@ router.use(session({
     cookie: { secure: false }
 }));
 
-router.get('/', authenticateUser, controller.getAllUsers)
-
-router.get('/active', authenticateUser, controller.getAllLoggedInUsers)
 
 router.post("/register", controller.registerUser)
 
 router.post("/login", controller.logInUser);
 
-router.post("/refresh", controller.refreshUser);
-
-router.post('/logout', controller.logOutUser);
+router.get('/logout',  authenticateUser, controller.logOutUser);
 
 router.delete('/delete', authenticateUser, controller.deleteUser);
+
+router.get('/', authenticateUser,controller.getAllUsers)
+
+
+
+
+
+router.get('/active', authenticateUser, controller.getAllLoggedInUsers)
+
+
+router.get("/refresh", authenticateUser, controller.refreshUser);
+
+
+
+
 
 router.put('/update', authenticateUser, controller.updateUserProfile);
 

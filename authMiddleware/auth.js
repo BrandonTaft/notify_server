@@ -8,7 +8,12 @@ if(!headers) {
 };
 try {
     const token = headers.split(' ')[1]
-    jwt.verify(token, process.env.JWT_SECRET_KEY);
+    jwt.verify(token, process.env.JWT_SECRET_KEY, function(err, decoded){
+        if(!err) {
+            res.locals.authenticated = decoded.id
+        console.log("DECODED", decoded)
+        }
+    });
     next();
 } catch (error) {
     return res.status(401).json({success: false, message: error})

@@ -68,7 +68,6 @@ scheduler.startCronJobScheduler();
 const randomId = () => crypto.randomBytes(8).toString("hex");
 
 socketIO.use(async (socket, next) => {
-  console.log("SOMEONE IS TRYING")
   const sessionID = socket.handshake.auth.sessionID;
   const token = socket.handshake.auth.token;
   console.log("SESSION: ", sessionID, "TOKEN: ", token)
@@ -76,36 +75,46 @@ socketIO.use(async (socket, next) => {
     return next(new Error("invalid user id"));
   }
   try {
-    jwt.verify(token, process.env.JWT_SECRET_KEY);
-    if (sessionID) {
-      const session = sessionStore.findSession(sessionID);
-      console.log("SESSION FOUND :", session)
-      if (session) {
-        console.log("THIS IS OUR SESSION", session)
-        socket.sessionID = sessionID;
-        socket.userID = session.userID;
-        socket.username = session.username;
-        return next();
+    jwt.verify(token, process.env.JWT_SECRET_KEY, function (err, decoded) {
+      if (!err) {
+        if (sessionID) {
+          const session = sessionStore.findSession(sessionID);
+          console.log("SESSION FOUND :", session)
+          if (session) {
+            socket.sessionID = sessionID;
+            socket.userID = session.userID;
+            socket.username = session.username;
+            return next();
+          } else {
+            socket.sessionID = sessionID;
+            socket.userID = decoded.id;
+            socket.username = decoded.userName
+            next();
+          }
+        }
+        const username = socket.handshake.auth.username;
+        if (!username) {
+          return next(new Error("invalid username"));
+        }
+        socket.sessionID = randomId();
+        socket.userID = socket.handshake.auth.userID;
+        socket.username = username
+        next();
+      } else {
+        console.log(token, error)
       }
-    }
-    const username = socket.handshake.auth.username;
-    if (!username) {
-      return next(new Error("invalid username"));
-    }
-    socket.sessionID = randomId();
-    socket.userID = socket.handshake.auth.userID;
-    socket.username = username
-    console.log("USER NAME :", username)
-    next();
+    });
   } catch (error) {
     console.log(token, error)
   }
 });
 
 socketIO.on("connection", (socket) => {
+  //if user is logged in but disconnected from socket
+  userController.connectUser(socket.userID)
   console.log("SOMEONE CONNECTED")
-   // persist session
-   sessionStore.saveSession(socket.sessionID, {
+  // persist session
+  sessionStore.saveSession(socket.sessionID, {
     userID: socket.userID,
     username: socket.username,
     connected: true,
@@ -121,61 +130,21 @@ socketIO.on("connection", (socket) => {
   socket.join(socket.userID);
 
   // notify existing users
-  socket.broadcast.emit("user connected")
-
-  let activeUsers = [];
-  for (let [id, socket] of socketIO.of("/").sockets) {
-    let existingActiveUser = activeUsers.find(user => user.userID === socket.userID)
-    if (existingActiveUser) {
-      existingActiveUser.userID = id
-    } else {
-      activeUsers.push({
-        userID: socket.userID,
-        username: socket.username
-      });
-    }
-  }
-  socket.emit("users", activeUsers);
-  //tells all clients except the socket itself, to refresh list
-  
-  console.log("ActiveUSERS", activeUsers)
+  socket.emit("user connected", socket.userID)
 
   //refresh list on client if user logs out/in but never disco'd from server
-  socket.on("user logging in", () => {
+  socket.on("user logged in", () => {
     socket.broadcast.emit("user connected", socket.userID);
   });
 
-  //refresh list on client if user logs out/in but never disco'd from server
-  socket.on("user logged out", () => {
-    console.log("USER LOGGING OUT")
-    // notify other users
-    socket.broadcast.emit("user disconnected", socket.userID);
-  })
-
-
+  
   socket.on("newPrivateMessage", async ({ newPrivateMessage }) => {
-
-
     socket.to(newPrivateMessage.receiverId).emit("newPrivateMessage", {
       newPrivateMessage: {
         ...newPrivateMessage, fromSelf: false
       }
     });
-
-
-
-
-    //  let recipient = activeUsers.find((user) => user.user === newPrivateMessage.receiverId)
-    //  console.log("IDDDD", newPrivateMessage.receiverId, activeUsers.find(({user}) => user === newPrivateMessage.receiverId))
-    //   if (recipient) {
-    //     console.log("REC", recipient)
-    //     socket.to(recipient.userID).emit("newPrivateMessage", {
-    //       newPrivateMessage: {
-    //         ...newPrivateMessage, fromSelf: false
-    //       }
-    //     });
-    //   } 
-    userController.updateReceiversPrivateRooms(newPrivateMessage)
+    userController.updateReceiversPrivateRooms({ ...newPrivateMessage, fromSelf: false })
     userController.updateSendersPrivateRooms(newPrivateMessage)
   });
 
@@ -237,11 +206,9 @@ socketIO.on("connection", (socket) => {
       })
   });
 
-  
-
-  
-
   socket.on("disconnect", async () => {
+    console.log("USER DISCONNECTED", socket.userID)
+    userController.disconnectUser(socket.userID)
     const matchingSockets = await socketIO.in(socket.userID).allSockets();
     const isDisconnected = matchingSockets.size === 0;
     if (isDisconnected) {
@@ -255,11 +222,6 @@ socketIO.on("connection", (socket) => {
       });
     }
   });
-
-  // socket.on("disconnect", () => {
-  //   activeUsers = activeUsers.filter((user) => user.userID !== socket.userID)
-  //   socket.broadcast.emit("user disconnected", socket.username)
-  // });
 });
 
 
