@@ -210,7 +210,7 @@ console.log("activeusers", activeUsers)
         }
         ChatRoom.find({ isPrivate: false }).then((allRooms) => {
           console.log("ALLROOMS", allRooms)
-          socket.emit("chatRoomList", allRooms);
+          socketIO.emit("chatRoomList", allRooms);
         })
       })
   });
