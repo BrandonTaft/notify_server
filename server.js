@@ -101,7 +101,7 @@ socketIO.use(async (socket, next) => {
         socket.username = username
         next();
       } else {
-        console.log(token, error)
+        console.log(token, err)
       }
     });
   } catch (error) {
@@ -111,15 +111,32 @@ socketIO.use(async (socket, next) => {
 
 socketIO.on("connection", (socket) => {
   //if user is logged in but disconnected from socket
-  userController.connectUser(socket.userID)
-  console.log("SOMEONE CONNECTED")
+  //userController.connectUser(socket.userID)
+  console.log("SOMEONE CONNECTED", socket.username)
+  User.findOne({ _id: socket.userID })
+        .then(async existingUser => {
+            console.log("found the user trying to connect", existingUser)
+            if (existingUser !== null) {
+                existingUser.isLoggedIn = true;
+                existingUser.save();
+            }
+            console.log("saved logged in user", existingUser)
+            socketIO.emit("user connected", socket.userID)
+        })
   // persist session
   sessionStore.saveSession(socket.sessionID, {
     userID: socket.userID,
-    username: socket.username,
+    username: socket.username, 
     connected: true,
   });
-
+  const activeUsers = []
+for(let [id,socket] of socketIO.of("/").sockets) {
+  activeUsers.push({
+    socketId: id,
+    name: socket.username
+  })
+}
+console.log("activeusers", activeUsers)
   // emit session details
   socket.emit("session", {
     sessionID: socket.sessionID,
@@ -130,7 +147,7 @@ socketIO.on("connection", (socket) => {
   socket.join(socket.userID);
 
   // notify existing users
-  socket.emit("user connected", socket.userID)
+  
 
   //refresh list on client if user logs out/in but never disco'd from server
   socket.on("user logged in", () => {
@@ -152,46 +169,48 @@ socketIO.on("connection", (socket) => {
     chatRoomController.createChatRoom(roomId, roomName, ownerId, ownerName, isPrivate, organization)
       .then((result) => {
         if (result) {
+          socket.join(result.roomId);
           ChatRoom.find({ isPrivate: false }).then((allRooms) => {
             socketIO.emit("chatRoomList", allRooms);
           })
         }
-        socket.join(result.roomId);
+        
       })
   });
 
   socket.on("findRoom", (roomId) => {
+    socket.join(roomId)
     ChatRoom.findOne({ roomId: roomId })
       .then(async existingRoom => {
         if (existingRoom) {
-          socketIO.emit("foundRoom", existingRoom.messages);
+          socket.emit("foundRoom", existingRoom.messages);
         }
       })
   });
 
   socket.on("newMessage", (data) => {
-    const { roomId, message, user, userId, profileImage, organization, reactions, timestamp } = data;
-    const messageId = crypto.randomBytes(16).toString("hex");
+    const { roomId, messageId, text, user, userId, profileImage, reactions, time } = data;
     const newMessage = {
       messageId,
       roomId,
-      text: message,
+      text,
       user,
       userId,
       profileImage,
-      time: `${timestamp.hour}:${timestamp.mins}`,
+      time,
       reactions
     };
+    socket.to(roomId).emit("newMessage", newMessage);
     ChatRoom.findOne({ roomId: roomId })
       .then(async existingChatRoom => {
         if (existingChatRoom) {
           existingChatRoom.messages.push(newMessage)
           await existingChatRoom.save();
-          socketIO.emit("newMessage", existingChatRoom.messages);
+         // socket.emit("newMessage", existingChatRoom.messages);
         }
         ChatRoom.find({ isPrivate: false }).then((allRooms) => {
           console.log("ALLROOMS", allRooms)
-          socketIO.emit("chatRoomList", allRooms);
+          socket.emit("chatRoomList", allRooms);
         })
       })
   });
@@ -202,14 +221,23 @@ socketIO.on("connection", (socket) => {
       { $inc: { [`messages.$.reactions.${reaction}`]: 1 } }, { new: true },)
       .then(async result => {
         let message = result.messages.filter((message) => message.messageId === messageId)
-        socketIO.emit("newReaction", message[0]);
+        socket.emit("newReaction", message[0]);
       })
   });
 
+
   socket.on("disconnect", async () => {
-    console.log("USER DISCONNECTED", socket.userID)
-    userController.disconnectUser(socket.userID)
-    const matchingSockets = await socketIO.in(socket.userID).allSockets();
+    console.log("USER DISCONNECTED", socket.username)
+    //userController.disconnectUser(socket.userID)
+    User.findOne({ _id: socket.userID })
+        .then(async existingUser => {
+            if (existingUser !== null) {
+                existingUser.isLoggedIn = false;
+                existingUser.save();
+            }
+            console.log("saved logged out user", existingUser)
+        })
+    const matchingSockets = await socket.in(socket.userID).allSockets();
     const isDisconnected = matchingSockets.size === 0;
     if (isDisconnected) {
       // notify other users
@@ -221,6 +249,7 @@ socketIO.on("connection", (socket) => {
         connected: false,
       });
     }
+    console.log("activeusers", activeUsers)
   });
 });
 

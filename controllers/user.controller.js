@@ -30,9 +30,9 @@ exports.registerUser = (req, res) => {
                         let savedUser = await user.save()
                         if (savedUser !== null) {
                             await Organization.updateOne(
-                                {name:organization},
-                                { $push: { users: {name:userName, userId: savedUser._id} } },
-                                ).collation({ locale: 'en', strength: 2 }
+                                { name: organization },
+                                { $push: { users: { name: userName, userId: savedUser._id } } },
+                            ).collation({ locale: 'en', strength: 2 }
                             )
                             res.status(201).json({ success: true, message: "User is registered" })
                         }
@@ -52,7 +52,7 @@ exports.logInUser = (req, res) => {
             if (existingUser) {
                 bcrypt.compare(password, existingUser.password, (error, verifiedUser) => {
                     if (verifiedUser) {
-                        existingUser.isLoggedIn = true;
+                        //existingUser.isLoggedIn = true;
                         existingUser.save();
                         const token = jwt.sign(
                             { id: existingUser._id, userName: userName },
@@ -79,10 +79,12 @@ exports.logInUser = (req, res) => {
 
 exports.refreshUser = (req, res) => {
     console.log("REFREXH IN USERCONTROLLER", res.locals.authenticated)
-    const  userId  = res.locals.authenticated;
+    const userId = res.locals.authenticated;
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
+                existingUser.isLoggedIn = true;
+                existingUser.save();
                 console.log("EXISTING USER", existingUser)
                 res.status(201).json({
                     success: true,
@@ -98,12 +100,15 @@ exports.refreshUser = (req, res) => {
 };
 
 exports.connectUser = (userId) => {
+    console.log("user is trying to connect", userId)
     User.findOne({ _id: userId })
         .then(async existingUser => {
+            console.log("found the user trying to connect", existingUser)
             if (!existingUser.isLoggedIn) {
                 existingUser.isLoggedIn = true;
                 existingUser.save();
             }
+            console.log("saved logged in user", existingUser)
         })
 }
 
@@ -112,14 +117,15 @@ exports.disconnectUser = (userId) => {
         .then(async existingUser => {
             if (existingUser.isLoggedIn) {
                 existingUser.isLoggedIn = false;
-                existingUser.save(); 
+                existingUser.save();
             }
+            console.log("saved logged out user", existingUser)
         })
 }
 
 exports.logOutUser = (req, res) => {
-    const  userId  = res.locals.authenticated;
-    console.log(userId , "is logged out")
+    const userId = res.locals.authenticated;
+    console.log(userId, "is logged out")
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
@@ -133,10 +139,10 @@ exports.logOutUser = (req, res) => {
 };
 
 exports.deleteUser = (req, res) => {
-    const  userId  = res.locals.authenticated;
+    const userId = res.locals.authenticated;
     User.deleteOne({ _id: userId })
         .then((result) => {
-            if(result.deletedCount === 1) {
+            if (result.deletedCount === 1) {
                 res.status(200).json({ success: true, message: "Profile was deleted" });
             } else {
                 res.status(404).json({ success: false, message: "There was an error deleting the profile" });
@@ -165,7 +171,7 @@ exports.updateUserProfile = (req, res) => {
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser.userName.toLowerCase() === updatedProfileData.userName.toLowerCase()) {
-                Object.assign(existingUser, {organization: updatedProfileData.organization})
+                Object.assign(existingUser, { organization: updatedProfileData.organization })
                 existingUser.save();
                 res.status(201).json({ success: true, upDatedProfile: existingUser, message: "Updated user profile" });
             } else {
@@ -228,7 +234,7 @@ exports.addNote = (req, res) => {
     User.findOne({ _id: userId })
         .then(async existingUser => {
             if (existingUser) {
-                existingUser.notes.push({...note, isDeleted: false})
+                existingUser.notes.push({ ...note, isDeleted: false })
                 existingUser.save();
                 res.status(201).json({ success: true, message: "Note added", notes: existingUser.notes });
             } else {
@@ -242,7 +248,7 @@ exports.updateNoteById = (req, res) => {
     const updatedNote = req.body.updatedNote;
     console.log("NOTEEEE", updatedNote)
     User.findOneAndUpdate({ _id: userId, 'notes._id': updatedNote.noteId },
-        { $set: { "notes.$": { body:updatedNote.content, _id: updatedNote.noteId } } })
+        { $set: { "notes.$": { body: updatedNote.content, _id: updatedNote.noteId } } })
         .then(async note => {
             if (note !== null) {
                 res.status(200).json({ success: true, message: "note has been updated" });
@@ -267,75 +273,75 @@ exports.deleteNoteById = async (req, res) => {
         })
 };
 
-exports.updatePrivateRoom = async ( req, res ) => {
+exports.updatePrivateRoom = async (req, res) => {
     const userId = req.body.userId;
     const otherPartyId = req.body.otherPartyId;
     const otherPartyName = req.body.otherPartyName
     const message = req.body.message
-    console.log("TESSSSSST", userId, otherPartyId, otherPartyName, message)  
+    console.log("TESSSSSST", userId, otherPartyId, otherPartyName, message)
     try {
-    User.findOne({ _id: userId })
-        .then(async(user) => {
-            if(user) {
-                existingRoom = user.privateRooms.find(room => room.recipientId === otherPartyId)
-                if(existingRoom){
-                    existingRoom.messages.push(message)
-                    user.save();
-                    console.log("UPDATEEE", user)
-                } else {
-                    user.privateRooms.push({recipientId: otherPartyId, recipientName: otherPartyName, messages: [message]})
-                    user.save();
-                    console.log("UPDATEEE", user)
+        User.findOne({ _id: userId })
+            .then(async (user) => {
+                if (user) {
+                    existingRoom = user.privateRooms.find(room => room.recipientId === otherPartyId)
+                    if (existingRoom) {
+                        existingRoom.messages.push(message)
+                        user.save();
+                        console.log("UPDATEEE", user)
+                    } else {
+                        user.privateRooms.push({ recipientId: otherPartyId, recipientName: otherPartyName, messages: [message] })
+                        user.save();
+                        console.log("UPDATEEE", user)
+                    }
                 }
-            }
-        })
-  } catch (error) {
-    console.log("Unable to complete request", error );
-  }
+            })
+    } catch (error) {
+        console.log("Unable to complete request", error);
+    }
 };
 
-exports.updateReceiversPrivateRooms = async ( newPrivateMessage ) => {
+exports.updateReceiversPrivateRooms = async (newPrivateMessage) => {
     const { receiverId, senderId, sender } = newPrivateMessage
     try {
-    User.findOne({ _id: receiverId })
-        .then(async(user) => {
-            if(user) {
-                existingRoom = user.privateRooms.find(room => room.recipientId === senderId)
-                if(existingRoom){
-                    existingRoom.messages.push(newPrivateMessage)
-                    user.save();
-                    console.log("UPDATEEE", user)
-                } else {
-                    user.privateRooms.push({recipientId: senderId, recipientName: sender, messages: [newPrivateMessage]})
-                    user.save();
-                    console.log("UPDATEEE", user)
+        User.findOne({ _id: receiverId })
+            .then(async (user) => {
+                if (user) {
+                    existingRoom = user.privateRooms.find(room => room.recipientId === senderId)
+                    if (existingRoom) {
+                        existingRoom.messages.push(newPrivateMessage)
+                        user.save();
+                        console.log("UPDATEEE", user)
+                    } else {
+                        user.privateRooms.push({ recipientId: senderId, recipientName: sender, messages: [newPrivateMessage] })
+                        user.save();
+                        console.log("UPDATEEE", user)
+                    }
                 }
-            }
-        })
-  } catch (error) {
-    console.log("Unable to complete request", error );
-  }
+            })
+    } catch (error) {
+        console.log("Unable to complete request", error);
+    }
 };
 
-exports.updateSendersPrivateRooms = async ( newPrivateMessage ) => {
+exports.updateSendersPrivateRooms = async (newPrivateMessage) => {
     const { receiverId, senderId, receiver } = newPrivateMessage
     try {
-    User.findOne({ _id: senderId })
-        .then(async(user) => {
-            if(user) {
-                existingRoom = user.privateRooms.find(room => room.recipientId === receiverId)
-                if(existingRoom){
-                    existingRoom.messages.push(newPrivateMessage)
-                    user.save();
-                    console.log("UPDATEEE", user)
-                } else {
-                    user.privateRooms.push({recipientId: receiverId, recipientName: receiver, messages: [newPrivateMessage]})
-                    user.save();
-                    console.log("UPDATEEE", user)
+        User.findOne({ _id: senderId })
+            .then(async (user) => {
+                if (user) {
+                    existingRoom = user.privateRooms.find(room => room.recipientId === receiverId)
+                    if (existingRoom) {
+                        existingRoom.messages.push(newPrivateMessage)
+                        user.save();
+                        console.log("UPDATEEE", user)
+                    } else {
+                        user.privateRooms.push({ recipientId: receiverId, recipientName: receiver, messages: [newPrivateMessage] })
+                        user.save();
+                        console.log("UPDATEEE", user)
+                    }
                 }
-            }
-        })
-  } catch (error) {
-    console.log("Unable to complete request", error );
-  }
+            })
+    } catch (error) {
+        console.log("Unable to complete request", error);
+    }
 };
