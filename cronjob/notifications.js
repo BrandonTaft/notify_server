@@ -4,9 +4,9 @@ require('dotenv').config()
 
 async function checkForDueNotifications() {
     let time = new Date();
-    const currentDate = time.toLocaleDateString('en-US');
-    const currentHour = time.getHours();
-    const currentMinute = time.getMinutes();
+    const currentDate = time.toUTCString().slice(0, 16);
+    const currentHour = time.getUTCHours();
+    const currentMinute = time.getUTCMinutes();
 
     let remindersDueToday = await Reminders.aggregate([
         { $unwind: "$reminders" },
@@ -16,7 +16,7 @@ async function checkForDueNotifications() {
     if (remindersDueToday.length > 0) {
         console.log("Reminders due today are : ", remindersDueToday)
     } else {
-        console.log("There are no reminders due today!")
+        console.log(`There are no reminders due today - ${currentDate}!`)
     };
 
     let remindersDueThisMinute = remindersDueToday.filter((item) => {
@@ -24,13 +24,13 @@ async function checkForDueNotifications() {
             item.reminders.dueTime.hours === currentHour
             &&
             item.reminders.dueTime.minutes === currentMinute
-            &&
-            item.reminders.isDeleted === false
-            &&
-            item.reminders.isCompleted === false
+            // &&
+            // item.reminders.isDeleted === false
+            // &&
+            // item.reminders.isCompleted === false
         )
     });
-
+console.log("reminders due now",remindersDueThisMinute, "at", currentHour, ':', currentMinute)
     if (remindersDueThisMinute.length > 0) {
         let expo = new Expo();
         let messages = [];
